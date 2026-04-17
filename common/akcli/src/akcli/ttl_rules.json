@@ -1,0 +1,139 @@
+{
+  "rules": [
+    {
+      "_comment": "10min — 板块摘要/资金流/涨停池/龙虎榜",
+      "ttl": 600,
+      "apis": [
+        "stock_board_concept_summary_ths",
+        "stock_board_industry_summary_ths",
+        "stock_zt_pool_dtgc_em",
+        "stock_zt_pool_em",
+        "stock_zt_pool_previous_em",
+        "stock_zt_pool_strong_em",
+        "stock_zt_pool_sub_new_em",
+        "stock_zt_pool_zbgc_em",
+        "stock_lhb_detail_em",
+        "stock_lhb_ggtj_sina",
+        "stock_lhb_hyyyb_em",
+        "stock_lhb_jgmmtj_em",
+        "stock_lhb_jgmx_sina",
+        "stock_lhb_jgstatistic_em",
+        "stock_lhb_jgzz_sina",
+        "stock_lhb_stock_detail_date_em",
+        "stock_lhb_stock_detail_em",
+        "stock_lhb_stock_statistic_em",
+        "stock_lhb_traderstatistic_em",
+        "stock_lhb_yyb_detail_em",
+        "stock_lhb_yybph_em",
+        "stock_lhb_yytj_sina",
+        "stock_market_fund_flow",
+        "stock_main_fund_flow",
+        "stock_board_change_em",
+        "stock_fund_flow_industry",
+        "stock_fund_flow_big_deal",
+        "stock_sector_fund_flow_summary",
+        "stock_individual_fund_flow_rank"
+      ]
+    },
+    {
+      "_comment": "1h — 日度汇总数据（资金流/板块异动等）",
+      "ttl": 3600,
+      "apis": [
+        "stock_fund_flow_industry",
+        "stock_fund_flow_big_deal",
+        "stock_fund_flow_concept",
+        "stock_fund_flow_individual",
+        "stock_individual_fund_flow",
+        "stock_individual_fund_flow_rank",
+        "stock_main_fund_flow",
+        "stock_market_fund_flow",
+        "stock_sector_fund_flow_summary",
+        "stock_board_change_em"
+      ]
+    },
+    {
+      "_comment": "2h — 新闻资讯",
+      "ttl": 7200,
+      "apis": [
+        "futures_news_shmet",
+        "index_news_sentiment_scope",
+        "news_cctv",
+        "news_economic_baidu",
+        "news_report_time_baidu",
+        "news_trade_notify_dividend_baidu",
+        "news_trade_notify_suspend_baidu",
+        "stock_news_em",
+        "stock_news_main_cx"
+      ]
+    },
+    {
+      "_comment": "24h — 财务报表",
+      "ttl": 86400,
+      "apis": [
+        "crypto_bitcoin_hold_report",
+        "fund_announcement_report_em",
+        "fund_financial_fund_info_em",
+        "fund_individual_profit_probability_xq",
+        "fund_report_asset_allocation_cninfo",
+        "fund_report_industry_allocation_cninfo",
+        "fund_report_stock_cninfo",
+        "get_qhkc_index_profit_loss",
+        "macro_china_au_report",
+        "macro_china_new_financial_credit",
+        "stock_balance_sheet_by_report_delisted_em",
+        "stock_balance_sheet_by_report_em",
+        "stock_balance_sheet_by_yearly_em",
+        "stock_cash_flow_sheet_by_quarterly_em",
+        "stock_cash_flow_sheet_by_report_delisted_em",
+        "stock_cash_flow_sheet_by_report_em",
+        "stock_cash_flow_sheet_by_yearly_em",
+        "stock_financial_abstract",
+        "stock_financial_abstract_new_ths",
+        "stock_financial_analysis_indicator",
+        "stock_financial_analysis_indicator_em",
+        "stock_financial_benefit_new_ths",
+        "stock_financial_benefit_ths",
+        "stock_financial_cash_new_ths",
+        "stock_financial_cash_ths",
+        "stock_financial_debt_new_ths",
+        "stock_financial_debt_ths",
+        "stock_financial_hk_analysis_indicator_em",
+        "stock_financial_hk_report_em",
+        "stock_financial_report_sina",
+        "stock_financial_us_analysis_indicator_em",
+        "stock_financial_us_report_em",
+        "stock_hk_financial_indicator_em",
+        "stock_hk_profit_forecast_et",
+        "stock_js_weibo_report",
+        "stock_notice_report",
+        "stock_profit_forecast_em",
+        "stock_profit_forecast_ths",
+        "stock_profit_sheet_by_quarterly_em",
+        "stock_profit_sheet_by_report_delisted_em",
+        "stock_profit_sheet_by_report_em",
+        "stock_profit_sheet_by_yearly_em",
+        "stock_report_disclosure",
+        "stock_report_fund_hold",
+        "stock_report_fund_hold_detail",
+        "stock_research_report_em",
+        "stock_yjbb_em",
+        "stock_yjkb_em",
+        "stock_yjyg_em",
+        "stock_zh_a_disclosure_report_cninfo",
+        "stock_zh_kcb_report_em"
+      ]
+    }
+  ],
+  "param_rules": [
+    {
+      "_comment": "stock_fund_flow_industry 按参数区分实时 vs 历史",
+      "api": "stock_fund_flow_industry",
+      "ttl": 30,
+      "params": [
+        {
+          "symbol": "即时"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+# Python
+__pycache__/
+*.pyc
+
+# Runtime lock files
+.last_akshare_update
+
+/uv.lock
+/.venv

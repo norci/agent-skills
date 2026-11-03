@@ -2,17 +2,12 @@
 """
 akshare CLI wrapper - 让 agent 直接调用 akshare API
 
-提供可被 import 的 call_api() 函数和命令行入口 main()。
+提供可被 import 的 call_api() 函数、list_apis()、get_info()。
 Valkey 缓存自动生效，避免频繁网络请求。
 
 用法（作为模块）:
-    from akcli.cli import call_api
-    df = call_api("stock_zt_pool_em", date=20260317)
-
-用法（命令行）:
-    akcli <function_name> [key=value ...]   调用 API
-    akcli --list [keyword]                  列出/搜索可用 API
-    akcli --info <function_name>            查看 API 详情
+ from akcli.cli import call_api
+ df = call_api("stock_zt_pool_em", date=20260317)
 """
 
 import inspect
@@ -32,7 +27,7 @@ from akcli.cache import cache_get, cache_set
 
 def _background_update():
     """后台静默更新 akshare/依赖（每小时最多一次，不阻塞主流程）。"""
-    _UPDATE_INTERVAL = 3600          # 1 小时
+    _UPDATE_INTERVAL = 3600 # 1 小时
     _PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     _UPDATE_FILE = os.path.join(_PROJECT_DIR, ".last_akshare_update")
 
@@ -62,7 +57,7 @@ def _background_update():
 
 
 _background_update()
-clean_expired()  # 启动时清理过期条目
+clean_expired() # 启动时清理过期条目
 
 # --- 重试配置 ---
 RETRY_MAX = 3
@@ -120,20 +115,20 @@ def call_api(func_name, **kwargs):
     调用 akshare API，自动缓存、自动重试、自动转 DataFrame。
 
     参数：
-        func_name: akshare API 名称，如 "stock_zt_pool_em"
-        **kwargs: API 参数
+    func_name: akshare API 名称，如 "stock_zt_pool_em"
+    **kwargs: API 参数
 
     返回：
-        pandas DataFrame（大多数 API）
-        或 dict / list（无法转 DataFrame 时）
+    pandas DataFrame（大多数 API）
+    或 dict / list（无法转 DataFrame 时）
 
     异常：
-        RuntimeError: API 调用失败时抛出
+    RuntimeError: API 调用失败时抛出
 
     示例：
-        df = call_api("stock_zt_pool_em", date=20260317)
-        df = call_api("stock_zh_a_hist", symbol="600519", period="daily",
-                      start_date="20260101", end_date="20260317", adjust="qfq")
+    df = call_api("stock_zt_pool_em", date=20260317)
+    df = call_api("stock_zh_a_hist", symbol="600519", period="daily",
+    start_date="20260101", end_date="20260317", adjust="qfq")
     """
     # 检查是否被 ban
     banned = check_banned(func_name)
@@ -145,16 +140,9 @@ def call_api(func_name, **kwargs):
     if func is None:
         raise AttributeError(f"akshare 中找不到 '{func_name}'")
 
-    # 参数类型转换（字符串 → int/float）
-    converted = {}
-    for k, v in kwargs.items():
-        if isinstance(v, str):
-            with suppress(ValueError):
-                v = int(v)
-            if isinstance(v, str):
-                with suppress(ValueError):
-                    v = float(v)
-        converted[k] = v
+    # 参数保持原样传入——akshare 函数签名自有多态
+    # 不做自动 int/float 转换，以免误伤 symbol（如 "000001"→1）或日期字符串
+    converted = dict(kwargs)
 
     # 先查缓存（pickle 反序列化，直接返回 DataFrame/dict/list）
     cached = cache_get(func_name, converted)
@@ -231,49 +219,3 @@ def get_info(func_name):
         "doc": (func.__doc__ or "").strip()[:500],
         "params": params,
     }
-
-
-def main():
-    """命令行入口"""
-    if len(sys.argv) < 2:
-        print(
-            json.dumps(
-                {"error": "Usage: akcli <func> [k=v...] | --list [kw] | --info <func>"},
-                ensure_ascii=False,
-            )
-        )
-        sys.exit(1)
-
-    if sys.argv[1] == "--list":
-        keyword = sys.argv[2] if len(sys.argv) > 2 else ""
-        results = list_apis(keyword)
-        print(json.dumps({"total": len(results), "apis": results}, ensure_ascii=False, indent=2))
-        return
-
-    if sys.argv[1] == "--info":
-        if len(sys.argv) < 3:
-            print(json.dumps({"error": "Usage: akcli --info <function_name>"}, ensure_ascii=False))
-            sys.exit(1)
-        print(json.dumps(get_info(sys.argv[2]), ensure_ascii=False, indent=2))
-        return
-
-    func_name = sys.argv[1]
-
-    # 解析 key=value 参数
-    kwargs = {}
-    for arg in sys.argv[2:]:
-        if "=" in arg:
-            k, v = arg.split("=", 1)
-            kwargs[k] = v
-
-    try:
-        df = call_api(func_name, **kwargs)
-        # 输出 JSON
-        if hasattr(df, "to_json"):
-            raw = df.to_json(orient="records", date_format="iso", force_ascii=False) or "[]"
-        else:
-            raw = json.dumps(df, default=str, ensure_ascii=False)
-        print(raw)
-    except (RuntimeError, AttributeError) as e:
-        print(json.dumps({"error": str(e)}, ensure_ascii=False))
-        sys.exit(1)

@@ -14,11 +14,14 @@ description: 规范 Git 与 GitHub 操作之行为准则。凡涉 clone、fork�
 - 不擅自添加、删除、修改 remote URL
 - SSH remote 需确认 key 已配；HTTPS remote 需确认 token 可用
 - 若 remote 缺失或 URL 有误，告之用户，请旨后行
+- 本机 GitHub 直连受阻时，可用 gh-proxy 作 rewrite：
+  `git config --global url."https://v6.gh-proxy.org/https://github.com/".insteadOf "https://github.com/"`。此 rewrite 仅限于 `https://github.com/`，其他 CDN 不受影响
 
 ## Fork 之律
 
 - `gh repo fork` 前先查 fork 是否已存在
 - fork 至个人账号后，本地 remote 名与上游区分：`origin` 指上游，个人 remote 另取名
+- 若仓库 remote 经代理改写，`gh repo view` 可能不识别当前目录所属 GitHub 仓库；此时对 `gh repo fork/view` 传显式 `owner/repo`，并先读 `gh repo fork --help`。部分 `gh` 版本在传 `<repository>` 时不支持 `--remote`；当分两步行之：先 `gh repo fork owner/repo`，再本地 `git remote add <fork-remote> <fork-url>`。
 
 ## 分支命名
 

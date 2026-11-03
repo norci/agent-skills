@@ -1,6 +1,6 @@
 ---
 name: memory-organization
-description:凡需整理、合并、去重 Hermes 记忆条目，即当加载。
+description: 凡需整理、合并、去重 Hermes 记忆条目，即当加载。
 ---
 
 # 记忆整理之律
@@ -29,12 +29,23 @@ description:凡需整理、合并、去重 Hermes 记忆条目，即当加载。
 
 ### 输出目录
 
-自动生成的技能输出至 `~/.hermes/custom-skills/`。此目录已在 config.yaml 的 `skills.external_dirs` 中注册，重启后生效
+自建 skill 须置于 `~/code/agent-skills/<category>/<name>/`，通过 `skills.external_dirs` 配置加载：
 
 ```yaml
 skills:
   external_dirs:
-    - ~/.hermes/custom-skills
+    - ~/code/agent-skills
+```
+
+**不得**直接写入 `~/.hermes/skills/`——后者由 `hermes update` 管理，会被覆写。
+
+#### 误写后的迁移
+
+若误将自建 skill 写入 `~/.hermes/skills/`（或 `~/.hermes/custom-skills/`），用 `mv` 而非 `rm + 重写`：
+
+```bash
+mv ~/.hermes/skills/<category>/<skill>/ ~/code/agent-skills/<category>/<skill>/
+rmdir ~/.hermes/skills/<category>/  # 若目录变空
 ```
 
 ### 来源鉴别

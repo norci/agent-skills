@@ -9,6 +9,8 @@ description: 使用 akcli 模块查询中国金融市场数据（A股、基金�
 
 `call_api(func_name, **kwargs)` 调 akshare API，返回 pandas DataFrame。
 
+Python 取数宜在技能目录执行：`cd /home/josephx/code/agent-skills/akcli && uv run python ...`。
+
 ## 用法
 
 LLM 生成 Python 代码，`from akcli.cli import call_api` 调用之。
@@ -27,12 +29,15 @@ print(df.nlargest(5, "涨跌幅")[["名称", "涨跌幅"]].to_string(index=False
 - 实时（雪球）：`call_api("stock_individual_spot_xq", symbol="SH688295")` — 返回两列（item/value），以 `dict(zip(df["item"], df["value"]))` 转为字典取用
 - 宏观：`call_api("macro_china_cpi")`
 
-日期格式 `YYYYMMDD`。搜索 API 与查看参数用 `akcli.sh --list <关键词>` / `akcli.sh --info <api_name>`。
+日期格式 `YYYYMMDD`。
+
+## 不可用 API
+
+`*_xq` 系列（雪球）需 `xq_a_token`，当前环境不具备。
 
 ## 常用 API
 
 | 功能 | API | 主要参数 |
-|------|-----|----------|
 | 指数行情 | `stock_zh_index_spot_sina` | — |
 | 日K/周K/月K | `stock_zh_a_hist` | symbol, period, start_date, end_date, adjust |
 | 涨停股池 | `stock_zt_pool_em` | date |

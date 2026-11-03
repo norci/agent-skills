@@ -1,6 +1,6 @@
 ---
 name: open-source-contribution-strategy
-description:凡涉开源项目贡献、Issue 处理、PR 提交、社区协作，即当加载。
+description: 凡涉开源项目贡献、Issue 处理、PR 提交、社区协作，即当加载。
 ---
 
 # 开源贡献之则
@@ -13,3 +13,7 @@ description:凡涉开源项目贡献、Issue 处理、PR 提交、社区协作�
 - 隔离开发：以 git worktree 隔离分支
 - 提 PR：标题 `feat: xxx (Issue #XXX)`，述与 Issue 之合
 - 跟进维护者之反馈
+
+## 陷阱
+
+- **上游已归档则 PR 不可达**：`gh repo view owner/repo --json isArchived` 查知归档后 `gh pr create` 必败（`Repository was archived so is read-only`）。此时 fork 与分支仍可推，PR 路径不通；改存于 fork 以备引用。

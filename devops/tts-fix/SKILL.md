@@ -1,6 +1,6 @@
 ---
 name: tts-fix
-description:凡涉 TTS 语音配置、语言匹配、audio 返回异常时，即当加载。
+description: 凡涉 TTS 语音配置、语言匹配、audio 返回异常时，即当加载。
 ---
 
 # TTS 语音匹配之道

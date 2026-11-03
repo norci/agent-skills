@@ -1,6 +1,6 @@
 ---
 name: distrobox-gui-app
-description:凡需创建 Distrobox 容器、配置 NVIDIA GPU、安装 GUI 应用，即当加载。
+description: 凡需创建 Distrobox 容器、配置 NVIDIA GPU、安装 GUI 应用，即当加载。
 tags: [distrobox, nvidia, gui, dingtalk, debian, ubuntu, electron, chinese-fonts]
 ---
 

@@ -51,13 +51,13 @@ from baostock_cli import apis, info
 ## 运行方式
 
 ```bash
-uv --directory /home/josephx/code/agent-skills/baostock-cli run python script.py
+uv --directory /home/josephx/code/agent-skills/common/baostock-cli run python script.py
 ```
 
 若只需手工验通：
 
 ```bash
-uv --directory /home/josephx/code/agent-skills/baostock-cli run python baostock_cli.py --list trade
+uv --directory /home/josephx/code/agent-skills/common/baostock-cli run python baostock_cli.py --list trade
 ```
 
 ## 核心 API 速查

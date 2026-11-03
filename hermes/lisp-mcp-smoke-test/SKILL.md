@@ -85,7 +85,7 @@ CL 中字符串是 `(VECTOR CHARACTER)`，`(vectorp "hello")` 返回 `T`。若 `
 ## 用法
 
 ```bash
-cd /home/josephx/code/agent-skills/lisp-mcp-smoke-test/scripts
+cd /home/josephx/code/agent-skills/hermes/lisp-mcp-smoke-test/scripts
 sbcl --noinform --load smoke.lisp
 ```
 

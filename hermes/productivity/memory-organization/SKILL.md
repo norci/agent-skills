@@ -29,12 +29,13 @@ description: 凡需整理、合并、去重 Hermes 记忆条目，即当加载�
 
 ### 输出目录
 
-自建 skill 须置于 `~/code/agent-skills/<category>/<name>/`，通过 `skills.external_dirs` 配置加载：
+自建 skill 置于 `~/code/agent-skills/` 下三分树之一：仅用 Hermes 工具的放 `hermes/<category>/<name>/`，与 harness 无关的放 `common/`，只用 pi 工具的放 `pi/`。经 `skills.external_dirs` 加载：
 
 ```yaml
 skills:
   external_dirs:
-    - ~/code/agent-skills
+    - ~/code/agent-skills/common
+    - ~/code/agent-skills/hermes
 ```
 
 **不得**直接写入 `~/.hermes/skills/`——后者由 `hermes update` 管理，会被覆写。
@@ -44,7 +45,7 @@ skills:
 若误将自建 skill 写入 `~/.hermes/skills/`（或 `~/.hermes/custom-skills/`），用 `mv` 而非 `rm + 重写`：
 
 ```bash
-mv ~/.hermes/skills/<category>/<skill>/ ~/code/agent-skills/<category>/<skill>/
+mv ~/.hermes/skills/<category>/<skill>/ ~/code/agent-skills/hermes/<category>/<skill>/
 rmdir ~/.hermes/skills/<category>/  # 若目录变空
 ```
 

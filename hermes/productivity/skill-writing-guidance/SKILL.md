@@ -143,7 +143,7 @@ prose.md 是合同（contract），不是领域说明书。合同内禁止出现
 
 ### 自建 skill 之归属
 
-凡用户手写之自建 skill，当置于 `~/code/agent-skills/<category>/<name>/`，通过 `skills.external_dirs` 加载。不可直接写入 `~/.hermes/skills/`——后者由 `hermes update` 管理，会被覆写。
+凡用户手写之自建 skill，当置于 `~/code/agent-skills/` 下三分树之一（`common/`、`hermes/`、`pi/`，判据见仓库 README），经 `skills.external_dirs` 加载。不可直接写入 `~/.hermes/skills/`——后者由 `hermes update` 管理，会被覆写。
 
 Agent 以 `skill_manage create` 写入 `~/.hermes/skills/` 者，为 Agent 所制，非用户自建，**不可迁移**至 `~/code/agent-skills/`。
 

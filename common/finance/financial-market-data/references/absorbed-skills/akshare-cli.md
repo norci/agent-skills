@@ -14,7 +14,7 @@ categories: [akshare]
 
 ```bash
 # 目录内直接调用
-cd /home/josephx/code/agent-skills/akcli
+cd /home/josephx/code/agent-skills/common/akcli
 ./akcli.sh stock_zt_pool_em date=20250317
 ./akcli.sh --list 涨停
 ./akcli.sh --info stock_zh_index_spot_sina
@@ -23,7 +23,7 @@ cd /home/josephx/code/agent-skills/akcli
 ## 用法（Python 式，须进 venv）
 
 ```bash
-/home/josephx/code/agent-skills/akcli/.venv/bin/python -c "
+/home/josephx/code/agent-skills/common/akcli/.venv/bin/python -c "
 from akcli.cli import call_api
 df = call_api('stock_zt_pool_em', date=20250317)
 print(df.head())

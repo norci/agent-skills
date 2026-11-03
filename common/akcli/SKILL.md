@@ -9,7 +9,7 @@ description: 使用 akcli 模块查询中国金融市场数据（A股、基金�
 
 `call_api(func_name, **kwargs)` 调 akshare API，返回 pandas DataFrame。
 
-Python 取数宜在技能目录执行：`cd /home/josephx/code/agent-skills/akcli && uv run python ...`。
+Python 取数宜在技能目录执行：`cd /home/josephx/code/agent-skills/common/akcli && uv run python ...`。
 
 ## 用法
 

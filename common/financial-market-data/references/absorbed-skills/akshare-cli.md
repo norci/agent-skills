@@ -1,5 +1,5 @@
 ---
-name: akshare-cli
+name: akcli
 description: 使用 akcli 模块查询中国金融市场数据（A股、基金、期货、宏观经济等）。当用户询问股票行情、K线、资金流向、基金净值、宏观经济数据、财务报表时使用。
 categories: [akshare]
 ---

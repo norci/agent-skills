@@ -28,4 +28,4 @@ skills:
 
 写进哪棵树，看技能里出现的工具名：`memory`、`skill_manage`、`text_to_speech`、`~/.hermes/*` 属 hermes；`fabric_exec`、`extensions.*`、`crw_*`、`serena`、`lightpanda` 属 pi；两者都不提则为 common。
 
-目录内可再分类（`devops/`、`finance/`、`workflow/`），分类只影响阅读，不影响加载。
+布局固定为 `<树>/<skill-name>/`，不再加分类层级。pi 只读 `SKILL.md` 的 frontmatter、不看路径，分类层对加载无用；技能名本身已含领域信息。

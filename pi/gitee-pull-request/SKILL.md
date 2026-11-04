@@ -9,19 +9,25 @@ description: 在 Gitee 上建 pull request 并核对。凡要把分支提 PR、�
 
 ## 建 PR
 
-```ts
-const owner = "x", repo = "x", head = "x", base = "main";
-const pushed = await pi.bash({ cmd: `git push -u origin ${head}`, settle: true });
-const sha = (await pi.bash({ cmd: "git rev-parse HEAD", settle: true })).output?.trim();
+推分支与建 PR 同在一个程序里，推送结果按 sha 比对断言，不靠输出真值判断：
 
-const pull = await extensions.mcp__gitee__create_pull({ owner, repo, title, head, base, body });
+```ts
+const branch = "fix/xxx", base = "main";
+const head = (await pi.bash({ cmd: "git rev-parse HEAD", settle: true })).output!.trim();
+await pi.bash({ cmd: `git push -u origin ${branch}`, settle: true });
+const seen = (await pi.bash({ cmd: `git ls-remote --heads origin refs/heads/${branch}`, settle: true })).output!;
+if (!seen.includes(head)) throw new Error(`分支未落远端: ${seen}`);
+
+const pull = await extensions.mcp__gitee__create_pull({ owner, repo, title, head: branch, base, body });
 // 返回 {number, html_url, ...}; number 是整数
 ```
+
+空 stdout 由 `pi.bash` 归一为字符串 `"(no output)"`，故判据取 `includes(head)`，不取 `seen.trim()` 的真假；见 `references/pitfalls.md` 之「空输出读作 (no output)」。
 
 `head` 形如 `branch` 或 `path_with_namespace:branch`，方括号照抄:
 
 ```ts
-const pull = await extensions.mcp__gitee__create_pull({
+const cross = await extensions.mcp__gitee__create_pull({
   owner, repo,
   head: `${owner}:${branch}`,   // 跨仓库时用此形
   base: "main",

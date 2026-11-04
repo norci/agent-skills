@@ -33,4 +33,16 @@
 
 ## 提交前的前置
 
-`create_pull` 不代推分支。分支不在远端时先 `git push -u origin <branch>`，并以 `git ls-remote --heads origin refs/heads/<branch>` 见 sha 为判据（`--dry-run` 不落远端 ref，不算数）。
+`create_pull` 不代推分支。分支不在远端时报 `400 (code: 400, details: 源分支 <branch> 不存在)` —— 不是权限，不是命名。先跑 `git ls-remote --heads origin refs/heads/<branch>`，无输出即漏了 push（`--dry-run` 不落远端 ref，不算数）。
+
+## 空输出读作 (no output)
+
+`pi.bash` 把空 stdout 归一为字符串 `"(no output)"`，`output.trim()` 永不为假。判据要比内容（sha、分支名），不能比真值 —— 否则「没推上去」与「已推上去」同判，push 整段被跳过。
+
+## 合入后源分支可能已被删
+
+PR 合入后远端 ref 常被删。未 `git fetch --prune` 时本地跟踪分支仍在、`git branch -vv` 仍列它；拿它再建 PR 得同一条 400。先 `git ls-remote --heads origin` 看远端还剩哪些分支。
+
+## 诊断别乱试接口
+
+`compare_branches_tags` 比的是 tag，不答「分支在不在」；拿它诊断 400 只多一次 404。分支存在与否的判据只有 `git ls-remote --heads origin`。

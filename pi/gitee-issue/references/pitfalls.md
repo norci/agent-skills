@@ -31,7 +31,7 @@ issue 的 `number` 形如 `"IKSQJK"`，PR 的 `number` 是整数 `3`。issue 工
 
 - 调用形如 `extensions.mcp__gitee__create_issue`。
 - `tools.describe` 的形参是 `ref`（单数），值不带 `@tool:` 前缀。
-- 返回是 `{content, text, structuredContent, details}`，取正文用 `text`。
+- 返回是信封 `{content, text, details, isError, structuredContent, source}`，数据在 `text`（JSON 字符串），取 `JSON.parse(text)`。
 
 ## 长正文走 payloads
 

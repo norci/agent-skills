@@ -23,15 +23,15 @@ const [, owner, repo] = url.replace(/\.git$/, "").match(/[:/]([^/:]+)\/([^/]+)$/
 ## 建 issue
 
 ```ts
-const issue = await extensions.mcp__gitee__create_issue({
+const created = await extensions.mcp__gitee__create_issue({
   owner,                 // 空间地址：个人、组织或企业路径
   repo,                  // 仓库路径，不带 owner
   title: "一句话说清是什么坏了",
   body: π.issue_body,    // Markdown；长文一律走 payloads
   labels: "bug",         // 逗号分隔；标签须已存在于仓库，名字 2–20 字
 });
-// 返回 { id, number: "IKSQJK", title, state, body, ... }
-// number 是字符串，形如 IKSQJK / I5ABCD
+const issue = JSON.parse(created.text);   // { id, number: "IKSQJK", title, state, body, ... }
+// number 是字符串，形如 IKSQJK / I5ABCD; 顶层是信封, 数据在 .text
 ```
 
 正文体例（缺一节就别写这节，不写空标题）：
@@ -61,10 +61,10 @@ const issue = await extensions.mcp__gitee__create_issue({
 const detail: any = await extensions.mcp__gitee__get_repo_issue_detail({
   owner, repo, number: issue.number,   // 字符串，非整数
 });
-const text = detail.text ?? JSON.stringify(detail.structuredContent);
+const got = JSON.parse(detail.text);   // 含 body, 与 create 之回显可比
 ```
 
-判据：`number`、`title`、`state === "open"` 三项对得上。
+判据：`number`、`title`、`state === "open"` 三项对得上；`body` 长度与首行亦可比。
 
 ## 改标题、正文、标签、状态
 

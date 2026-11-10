@@ -1,6 +1,6 @@
 ---
 name: agent-lsp-navigation
-description: 凡要读、找、改 .py/.ts/.go/.rs 源码，动手之前先读本技能。先 grep 或先整文件 read 即属绕行。
+description: LSP 符号导航——按符号取源码、查引用、算影响面的工具形状与返回信封。凡要读、找、改 .py/.ts/.go/.rs 源码，动手之前先读本技能；先 grep 或先整文件 read 即属绕行。
 ---
 
 # agent-lsp

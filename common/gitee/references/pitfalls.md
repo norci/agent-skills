@@ -12,7 +12,7 @@ PR 工具传字符串或浮点报 `must be an integer, not a float`；issue 工�
 
 ## 抓页面被挡
 
-`crw_scrape` 抓 `https://gitee.com/<owner>/<repo>/pulls/<n>` 回 HTTP 403（`您的访问受限`，Gitee 挡匿名）。
+抓取工具取 `https://gitee.com/<owner>/<repo>/pulls/<n>` 回 HTTP 403（`您的访问受限`，Gitee 挡匿名）。
 
 ## 标签不存在时两种表现
 
@@ -32,7 +32,7 @@ PR 工具传字符串或浮点报 `must be an integer, not a float`；issue 工�
 
 ## 空输出读作 (no output)
 
-`pi.bash` 把空 stdout 归一为 `"(no output)"`，`output.trim()` 永不为假 —— 判据要比内容（sha、分支名），不能比真值。
+命令执行器把空 stdout 归一为 `"(no output)"`，判空永不为假 —— 判据要比内容（sha、分支名），不能比真值。
 
 ## 合入后源分支已被删
 

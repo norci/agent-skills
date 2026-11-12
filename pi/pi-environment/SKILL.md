@@ -27,6 +27,13 @@ fabric 工具入口按来源分三类：pi 核心工具走 `pi.<名>`，pi 扩�
 
 - 代码体出现换行、反引号、`"`/`'`、`${`、`\`、heredoc 任一，agent 就把正文整段放进顶层 payloads，代码体只写 `π.<key>`。这条规则管全部代码体：bash、edit 的 newText、write、compress 正文，命中即走。agent 改文件前先数锚点命中数，命中一处才改。
 
+## 长命令与后台任务
+
+- 结果要用来续做时，前台跑并显式给 `timeout`（秒）。不传则由外层截断，实测六十秒被杀，日志尾写「Command timed out after 60 seconds」，前面看似在跑。
+- 结果不影响本回合续做时才 `background: true`；派出即结束回合，完成事件唤醒 agent，不另起一次去等。
+- 后台任务在程序内等不到：fabric_exec 的全局里没有 `tasks`，写 `tasks.wait` 报 `Cannot find name 'tasks'`。故要等就别派后台。
+- 派出后不查状态。`tools.call({ref:"tasks.get"})` 只在不打算等、要决定停不停时读一次。
+
 ## TODO
 
 用 `extensions.todo` 时，agent 先建 TODO 后动手，一步一条。description 写清原因、文件、判据、陷阱。agent 开始一条时标 in_progress，验证通过后标 completed。

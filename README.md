@@ -6,7 +6,7 @@
 |---|---|---|
 | `common/` | 与 harness 无关的技能（金融数据、devops、重构、git、安全边界） | pi 与 hermes 都加载 |
 | `hermes/` | 只用 Hermes 工具的技能（`memory`、`skill_manage`、`tts`、`lisp` MCP、Hermes 本体运维） | 仅 hermes |
-| `pi/` | 只用 pi 工具的技能（`fabric_exec`、`crw`、`lightpanda`） | 仅 pi |
+| `pi/` | 只用 pi 工具的技能（`codemode`、`crw_*`、`lightpanda`） | 仅 pi |
 
 ## 装配
 
@@ -26,6 +26,6 @@ skills:
 
 ## 判定
 
-写进哪棵树，看技能里出现的工具名：`memory`、`skill_manage`、`text_to_speech`、`~/.hermes/*` 属 hermes；`fabric_exec`、`extensions.*`、`crw_*`、`lightpanda` 属 pi；两者都不提则为 common。
+写进哪棵树，看技能里出现的工具名：`memory`、`skill_manage`、`text_to_speech`、`~/.hermes/*` 属 hermes；`codemode`、`acp_delegate`、`crw_*`、`lightpanda` 属 pi；两者都不提则为 common。
 
 布局固定为 `<树>/<skill-name>/`，不再加分类层级。pi 只读 `SKILL.md` 的 frontmatter、不看路径，分类层对加载无用；技能名本身已含领域信息。

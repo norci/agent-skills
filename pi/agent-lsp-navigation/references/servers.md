@@ -5,7 +5,7 @@ agent-lsp 只做 MCP 转发，真干活的二进制须在 PATH 上。本机已�
 ## 先看缺什么
 
 ```ts
-await extensions.mcp__agent_lsp__detect_lsp_servers({ workspace_dir: '/abs/project' });
+detect_lsp_servers({ workspace_dir: '/abs/project' });
 ```
 
 回 `InstalledServers`（`"python:pyright-langserver,--stdio"|python|/path|server` 逐行）、`NotInstalled`、`SuggestedConfig`。`NotInstalled` 里的即缺，按下表装。
@@ -26,7 +26,7 @@ await extensions.mcp__agent_lsp__detect_lsp_servers({ workspace_dir: '/abs/proje
 ## 验
 
 ```ts
-await extensions.mcp__agent_lsp__start_lsp({ root_dir: '/abs/project', language_id: 'python' });
+start_lsp({ root_dir: '/abs/project', language_id: 'python' });
 // -> LSP server started successfully
 ```
 

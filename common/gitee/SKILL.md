@@ -5,9 +5,9 @@ description: Gitee issue 与 PR 的形参、正文体例与判据。建或改 is
 
 # Gitee issue 与 PR
 
-issue 记现象，PR 带修法，常在同一轮里做。实测报错原文见 `references/pitfalls.md`。
+实测报错原文见 `references/pitfalls.md`。
 
-一段流程一个程序：取仓库、写单、回读断言是一条链，链末断言，不拆成多次调用，也不靠人读输出判断。
+一条流程写成一个程序：取仓库、写单、回读核对串成一条链，链末比字段是否相符，链中不逐段确认，不靠人读输出判断。
 
 ## 形参
 
@@ -33,7 +33,7 @@ graph TD
     D -->|"否"| F["断言失败, 不输出"]
 ```
 
-正文一次写全，不靠事后 `update_issue` 补。体例（缺一节就别写这节，不写空标题）：
+正文一次写全。体例（缺一节就别写这节，不写空标题）：
 
 ```markdown
 ## 现象
@@ -61,13 +61,13 @@ graph TD
     B -->|"state 略去"| D["正文与标签已改, 单仍开"]
 ```
 
-`title` 必传，即使只改标签、正文或状态。列表查询的形参为 `state`、`sort`、`direction`、`per_page`；大仓用 `state` 为 open，取全部会超出单次输出上限。
+`title` 必传。列表查询的形参为 `state`、`sort`、`direction`、`per_page`；大仓传 `state: open`。
 
 ## 建 PR
 
 ```mermaid
 graph TD
-    A["body 首行 关联 issue: #编号"] -->|"不传 issue 形参, 它会顶掉 PR 标题"| B["git rev-parse HEAD"]
+    A["body 首行 关联 issue: #编号"] -->|"不传 issue 形参"| B["git rev-parse HEAD"]
     B -->|"head"| C["git push -u origin 分支"]
     C --> D["git ls-remote --heads origin refs/heads/分支"]
     D -->|"输出含 head"| E["create_pull(title, head, base, body)"]
@@ -77,11 +77,9 @@ graph TD
     G -->|"否"| I["断言失败, 不输出"]
 ```
 
-分支存在与否只有一个判据：`git ls-remote --heads origin`。`--dry-run` 不落远端 ref；`compare_branches_tags` 比的是 tag；PR 合入后远端 ref 常被删，本地跟踪分支仍会列它。
+分支存在与否只认 `git ls-remote --heads origin` 的输出，不用 `--dry-run`、`compare_branches_tags`、本地跟踪分支。判据比内容（sha、分支名），不比真值。
 
 ## 改 PR
-
-正文只写不读：`update_pull` 与单条详情都不回 `body`，页面匿名访问被挡。判据落在写入前的本地断言与写入后的 ref 断言上，各一次。
 
 ```mermaid
 graph TD
@@ -94,4 +92,4 @@ graph TD
     F -->|"否"| H["断言失败"]
 ```
 
-正文对不对，靠写之前核一次；写完不读，因为服务端不回 `body`。为「正文写进去没有」另起通道不产生新读数，且拿占位正文探回执会覆盖刚写好的正文。
+正文写前核一次，写完不读，不为正文另起通道。

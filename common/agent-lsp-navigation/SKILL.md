@@ -17,6 +17,14 @@ description: LSP 符号导航——按符号取源码、查调用者与类型层
 
 判据：本轮手工做的每一步，先在这张表里找一件能答它的工具；找得到而不用，那一步就是绕行。
 
+## 串行不等于分轮
+
+改状态的调用必须串行：前一个返回后再发下一个，不得并发。
+
+串行只约束调用之间的次序，不约束轮次。不要把一条编辑链拆成多轮；同一轮内可以连续发出多个串行调用，编辑链在一轮内走完。
+
+同一文件的多个非重叠改动先合成一个 `WorkspaceEdit`，一次 `apply_edit` 发出；`safe_edit` 只做单段连续替换。只有后一处依赖前一处的返回值，或两段区间重叠时，才拆成串行调用。
+
 ## 一问一调用
 
 能从上表答出的问题，不许 grep，不许整文件 read。
@@ -53,9 +61,11 @@ description: LSP 符号导航——按符号取源码、查调用者与类型层
 3. 取原文 只对本轮要改的符号 get_symbol_source，一次一个，取完即改
 4. 查牵连 blast_radius({ changed_files: [单个文件] }) -> 按 test / non-test 分区
 5. 试改   模拟会话链，或一步 safe_edit 看 net_delta
-6. 改     replace_symbol_body / insert_*_symbol / safe_edit / rename_symbol
+6. 改     单段 safe_edit / replace_symbol_body / insert_*_symbol / rename_symbol；同文件多段非重叠改动合成一个 WorkspaceEdit 走 apply_edit
 7. 验     项目自己的检查命令（uv run pyright / bunx tsc --noEmit / go build）
 ```
+
+这七步在一轮内走完；第 3 步取原文与第 6 步落改动都是串行调用，不是分轮。
 
 - 本轮 `get_symbol_source` 的次数等于本轮要改的符号数，多出来的每一次都是手工拼边。
 - 新文件无符号可锚：先 `write` 落全文，此后按符号改。
@@ -98,7 +108,7 @@ start_lsp({ root_dir: '/abs/project', language_id: 'python' })
 - 路径必须绝对且落在已注册工作区内；相对路径按进程 cwd 解析，回 `is outside workspace root`。
 - 未起服务时其余工具回 `LSP client not initialized; call start_lsp first`。刚起服务时 `find_references` / `blast_radius` 可能回 `workspace is still being indexed`，等 1 秒重试。
 - `restart_lsp_server({ root_dir })` 会失败并把服务弄死：换 root 直接 `start_lsp`；卡死先 `pkill -f pyright-langserver` 再 `start_lsp`。
-- 改状态的调用串行（`open_document`、`close_document`、`rename_symbol`、`refactor`、`safe_apply_edit`、`insert_*_symbol`、`replace_symbol_body`、`simulate_edit`），只读的并发。
+- 改状态的调用串行（`open_document`、`close_document`、`rename_symbol`、`refactor`、`safe_apply_edit`、`insert_*_symbol`、`replace_symbol_body`、`simulate_edit`），只读的并发。串行是调用次序，不是分轮；一轮内可以连续发多个编辑调用。
 
 ## 改与试
 
@@ -106,6 +116,7 @@ start_lsp({ root_dir: '/abs/project', language_id: 'python' })
 - 多行参数的签名会被 `replace_symbol_body` 折断：改完文件开头只剩 `def name(`，报 `SyntaxError: '(' was never closed`。这类函数改用 `safe_edit` 整段替换，改完核签名行。
 - `symbol_path` 走点号路径。Go 的方法在 outline 里写作 `(Circle).Area`，`replace_symbol_body` 两种写法都回 `symbol "Area" not found at current level`，此时回到 `safe_edit`。
 - `safe_edit` 是「预览 + 应用」的一步版：净增量为 0 才落盘，否则回 `applied=false` 与预览诊断。
+- `safe_edit` 只替换一段连续原文。同一文件有多处互不重叠的改动时，把每处区间放进一个 `WorkspaceEdit` 交给 `apply_edit`，一次落盘；拆成多次 `safe_edit` 是把一条编辑链拆成多次调用，不是串行。
 - `safe_delete_symbol` 尚被引用时回 `symbol has N references; cannot safely delete`。
 - 改名先 `find_references` 看调用面，再 `rename_symbol({ dry_run: true })` 看落点；去掉 dry_run 直接改盘，故先保证工作树干净。
 - 模拟会话链 `NetDelta=0` 只证明服务没推新诊断：gopls 推编译器错误，pyright 不推。Python 上 `preview_edit` / `safe_edit` 通过不构成证据，仍以项目检查命令判。

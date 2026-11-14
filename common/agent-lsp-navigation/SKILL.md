@@ -95,7 +95,7 @@ description: LSP 符号导航——按符号取源码、查调用者与类型层
 - 同名跨类时 `SymbolName` 证明不了身份，锚取该类内独有的一行原文。
 - 签名片段作锚会落到参数上：`'def load(path@@'` 回 `SymbolName=path`。
 
-`line` / `column` 必须落在标识符本身且落在定义行。落在 `def` 关键字那一列、函数体、注释、接收者括号上都不抛错，只回 `No call hierarchy item found at <path>:<line>:<col>` 或 `lsp error 0: identifier not found`。`type_hierarchy` 只认类型名，落在函数上回 `lsp error 0: not a type name`。行号随编辑移动，改过文件后重取符号树或改用 pattern 锚。
+`line` / `column` 必须落在标识符本身且落在定义行。落在 `def` 关键字那一列、函数体、注释、接收者括号上都不抛错，只回 `No call hierarchy item found at <path>:<line>:<col>` 或 `lsp error 0: identifier not found`。`type_hierarchy` 只认类型名，落在函数上回 `lsp error 0: not a type name`。行号随编辑移动，改过文件后重取符号树或改用 pattern 锚。`find_references` 落在装饰器行或 `class` 关键字那一列，回的是全仓同名 import 行之类的无关命中（实测 57 条）；落在类名那一列才得真实引用（实测 56 条）。
 
 ## 会话
 
@@ -117,6 +117,8 @@ start_lsp({ root_dir: '/abs/project', language_id: 'python' })
 - `symbol_path` 走点号路径。Go 的方法在 outline 里写作 `(Circle).Area`，`replace_symbol_body` 两种写法都回 `symbol "Area" not found at current level`，此时回到 `safe_edit`。
 - `safe_edit` 是「预览 + 应用」的一步版：净增量为 0 才落盘，否则回 `applied=false` 与预览诊断。
 - `safe_edit` 只替换一段连续原文。同一文件有多处互不重叠的改动时，把每处区间放进一个 `WorkspaceEdit` 交给 `apply_edit`，一次落盘；拆成多次 `safe_edit` 是把一条编辑链拆成多次调用，不是串行。
+- 改一个符号前先一次问清：`get_symbol_source` 取它的完整源码，`resource.read` 一次读到 import 段结束。签名跨行时按行列取，不拿 `position_pattern` 猜；改 import 前先确认那一行存在。
+- `apply_edit` 与 `safe_edit` 只接受 LSP 根之下的路径：改另一个仓的文件先 `start_lsp` 指到那个根，或退回一次整文件读写。
 - `safe_delete_symbol` 尚被引用时回 `symbol has N references; cannot safely delete`。
 - 改名或删除前先问边：`explore_symbol`、`blast_radius` 在改之前跑。符号一删，`find_references` 再没有提问对象；删完才枚举，只剩跑测试与逐行读文件。
 - 改名先 `find_references` 看调用面，再 `rename_symbol({ dry_run: true })` 看落点；去掉 dry_run 直接改盘，故先保证工作树干净。
@@ -132,6 +134,6 @@ start_lsp({ root_dir: '/abs/project', language_id: 'python' })
 
 `get_diagnostics` 只回服务器已推送者，空结果不代表文件干净。`run_build` 跑 PATH 上的 `mypy`，不读项目配置；`run_tests` 对 python 走 `pytest --tb=json`，本机不认该取值。取真错用项目自己的检查命令。
 
-`find_references` 回 0 条且无 `indexed` 标记，不是「没有调用者」：消费者文件未入索引时同样回 0，类方法尤甚（实测五处调用回 0 条）。报出服务与文件，把这一层失败写进回答，再决定是否换路。
+`find_references` 回 0 条且无 `indexed` 标记，不是「没有调用者」：消费者文件未入索引时同样回 0，类方法尤甚（实测五处调用回 0 条）。报出服务与文件，把这一层失败写进回答，再决定是否换路。`blast_radius` 回 `symbols=0` 也可能是它枚举不到导出符号，与「这张图没有调用边」不可区分（实测 `strategy/futures/daily.py` 之 `Daily`）：改签名前按单符号 `find_references` 逐文件枚举，逐条落实构造点，不按列位猜哪条是构造、哪条是标注。
 
 `list_symbols` 超时不是退回 grep 加 read 的理由：报出服务与文件，换一个能索引它的服务。任何从 LSP 退到读文件或 grep 的动作，先说出缺的是哪一层；说不出即不换。

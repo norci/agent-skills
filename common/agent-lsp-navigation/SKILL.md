@@ -118,6 +118,7 @@ start_lsp({ root_dir: '/abs/project', language_id: 'python' })
 - `safe_edit` 是「预览 + 应用」的一步版：净增量为 0 才落盘，否则回 `applied=false` 与预览诊断。
 - `safe_edit` 只替换一段连续原文。同一文件有多处互不重叠的改动时，把每处区间放进一个 `WorkspaceEdit` 交给 `apply_edit`，一次落盘；拆成多次 `safe_edit` 是把一条编辑链拆成多次调用，不是串行。
 - `safe_delete_symbol` 尚被引用时回 `symbol has N references; cannot safely delete`。
+- 改名或删除前先问边：`explore_symbol`、`blast_radius` 在改之前跑。符号一删，`find_references` 再没有提问对象；删完才枚举，只剩跑测试与逐行读文件。
 - 改名先 `find_references` 看调用面，再 `rename_symbol({ dry_run: true })` 看落点；去掉 dry_run 直接改盘，故先保证工作树干净。
 - 模拟会话链 `NetDelta=0` 只证明服务没推新诊断：gopls 推编译器错误，pyright 不推。Python 上 `preview_edit` / `safe_edit` 通过不构成证据，仍以项目检查命令判。
 - `simulate_edit` 的区间含首尾行，`new_text` 整段替换该区间；替换函数体只取定义行之后的行。
@@ -131,4 +132,6 @@ start_lsp({ root_dir: '/abs/project', language_id: 'python' })
 
 `get_diagnostics` 只回服务器已推送者，空结果不代表文件干净。`run_build` 跑 PATH 上的 `mypy`，不读项目配置；`run_tests` 对 python 走 `pytest --tb=json`，本机不认该取值。取真错用项目自己的检查命令。
 
-`list_symbols` 超时不是退回 grep 加 read 的理由：报出服务与文件，换一个能索引它的服务。
+`find_references` 回 0 条且无 `indexed` 标记，不是「没有调用者」：消费者文件未入索引时同样回 0，类方法尤甚（实测五处调用回 0 条）。报出服务与文件，把这一层失败写进回答，再决定是否换路。
+
+`list_symbols` 超时不是退回 grep 加 read 的理由：报出服务与文件，换一个能索引它的服务。任何从 LSP 退到读文件或 grep 的动作，先说出缺的是哪一层；说不出即不换。

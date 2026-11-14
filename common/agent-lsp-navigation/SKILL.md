@@ -24,7 +24,7 @@ description: LSP 符号导航——按符号取源码、查调用者与类型层
 | 问什么 | 一次调用 | 回什么 |
 | --- | --- | --- |
 | 这个符号是什么、谁用它、有没有测试 | `explore_symbol` | 签名 + 源码 + 调用者 + 引用 + 测试者 |
-| 改这几个文件会牵连谁 | `blast_radius` | 按 test / non-test 分区的调用者 |
+| 改这几个文件会牵连谁 | `blast_radius` | 按 test / non-test 分区的调用者；`filter: 'untested'` 在 Python 上把局部变量也算符号，结果不具判别力，测试面按单符号 `find_references` 判 |
 | 谁调这个函数、这个函数调了谁 | `callers({ direction })` | 调用者图、被调者图 |
 | 类与接口的父子关系 | `type_hierarchy` | `extends` / `implements` 边 |
 | 接口或抽象方法有哪些实现 | `go_to_implementation` | 实现清单；pyright 不支持 |
@@ -70,6 +70,8 @@ description: LSP 符号导航——按符号取源码、查调用者与类型层
 - `Source` 就是该符号在文件里的整段原文，行数等于 `EndLine - StartLine + 1`；不 `read` 复核。
 - `StartLine` 带装饰器时指最外层装饰器行，定义行 = `StartLine` 加 `Source` 里首个 `def` / `class` / `async def` 行的下标；装饰器可跨多行，不能用「固定加一」。
 
+- `detect_changes` 的正文是 `## targets` 全表，一行一个符号，不分风险级；要判风险得读 `related` 与各符号的调用方，不能拿这张表当摘要。
+
 ## 位置怎么给
 
 收 `position_pattern` 的：`find_references`、`inspect_symbol`、`get_symbol_source`、`rename_symbol`、`explore`、`explore_symbol`、`refactor`。
@@ -101,6 +103,7 @@ start_lsp({ root_dir: '/abs/project', language_id: 'python' })
 ## 改与试
 
 - `replace_symbol_body` 的 `new_body` 只给定义行之后的行，把 `def` 行一并写进去就会出现两行 `def`；`insert_after_symbol` 的 `code` 则要给完整的定义行。
+- 多行参数的签名会被 `replace_symbol_body` 折断：改完文件开头只剩 `def name(`，报 `SyntaxError: '(' was never closed`。这类函数改用 `safe_edit` 整段替换，改完核签名行。
 - `symbol_path` 走点号路径。Go 的方法在 outline 里写作 `(Circle).Area`，`replace_symbol_body` 两种写法都回 `symbol "Area" not found at current level`，此时回到 `safe_edit`。
 - `safe_edit` 是「预览 + 应用」的一步版：净增量为 0 才落盘，否则回 `applied=false` 与预览诊断。
 - `safe_delete_symbol` 尚被引用时回 `symbol has N references; cannot safely delete`。

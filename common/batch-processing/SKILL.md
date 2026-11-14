@@ -1,124 +1,67 @@
 ---
 name: batch-processing
-description: 把多个独立操作合并进一个 Lisp 程序，一个程序走完取证据、判据、续取、动作、复核，只返回结论和证据。
+description: 把一条任务链的全部操作写进一个 Lisp 程序，一次调用走完取证据、判据、再取、动作、复核。需要多次取数、改文件或对多个目标做同一件事时用。
 ---
 
-# 用 Lisp 批处理
+# 一个程序即一条链
 
-一个程序即一步之全部。取证据、判判据、按判据续取、落动作、复核，都在同一个 Lisp 表单里走完。程序只返回结论和证据，不返回原始输出。
+一条链就是一份 Lisp 程序：先写步骤清单，一步一行标出输入与产出，再把整份清单落进同一个程序，一次发出。
 
-## 什么时候用
+## 判据：一轮只发这一个 tool call
 
-- 多条互不依赖的 shell 命令。
-- 同一条命令作用在多个文件、仓库或 PR 上。
-- 读、判断、写属于同一件事。
-- 需要按结果分流、逐项比对、反复重跑的动作。
+本轮要做的事能否写成程序？
 
-## 结构
+- 能，就只发这一份，中途不回头看输出。
+- 不能，说明缺的是哪一步的语言判断（用户意图、代码语义、审美取舍）。把该判断说清，并在同一轮里把判断之后的动作一并写进程序。
 
-一个程序分五段：
+## 清单写进程序
 
-1. **取证据**：把要查的东西列成列表。
-2. **判据**：用谓词判断每条证据。
-3. **续取**：判据不通过时，换判据或换输入重算。
-4. **动作**：对通过判据的项执行写操作。
-5. **复核**：重新读一遍，确认动作生效。
+```text
+读 A               -> 文本
+判 A 是否含 X      -> 布尔
+若 否: 读 A'       -> 文本
+写 A'              -> 退出码
+复核 A' 是否含 X   -> 布尔
+```
 
-返回 `(:conclusion ... :evidence ...)`，结论是判据的结果，证据是支撑结论的原始数据。
+清单留在这一轮的推理里，不另发 tool call 确认它。`let*` 里前面的绑定就是后面的输入，步骤先后不需要轮次。
+
+## 读数只回结论与红项
+
+程序返回 `(:conclusion ... :evidence ...)`：结论是每条判据的布尔结果，证据只放红项的原始输出。逐条读原始输出是重复劳动，红项自带它需要被看见的原文。
+
+## 失败与重算留在程序里
+
+命令失败时捕获错误字符串，记进该项，继续下一条；判据不通过时在同一程序里换判据或换输入重算。返回时仍有红项，下一轮从红项起步。
 
 ## 并发
 
-无依赖的任务同批派出，用 `sb-thread:make-thread` + `sb-thread:join-thread`。有依赖的任务串行。
+无依赖的段落同批派出，用 `sb-thread:make-thread` + `sb-thread:join-thread`，只改变同一程序内部那一段的形状。
 
-```lisp
-(defun run-concurrently (tasks)
-  (mapcar #'sb-thread:join-thread
-          (mapcar (lambda (task)
-                    (sb-thread:make-thread
-                     (lambda ()
-                       (handler-case
-                           (funcall task)
-                         (error (e) (list :error (format nil "~a" e)))))))
-                  tasks)))
-```
-
-`lparallel` 在 worker 里不可用，`bordeaux-threads` 和 `sb-thread` 可用。
-
-## 判据与重算
-
-判据是谓词，不通过时在同一个程序里换判据重算，不要退出程序再发一轮。
-
-```lisp
-(labels ((check (criterion)
-           (or (funcall criterion)
-               (check (lambda () (funcall criterion))))))
-  ...)
-```
+`lparallel` 在 worker 里不可用，`bordeaux-threads` 与 `sb-thread` 可用。
 
 ## 例子
 
-### 多条 shell 命令并发
+读仓库状态、判有无改动、有则取差异统计。
 
 ```lisp
-(let* ((commands '(("git" "status" "--short")
-                   ("git" "log" "--oneline" "-3")))
-       (results (mapcar #'sb-thread:join-thread
-                        (mapcar (lambda (command)
-                                  (sb-thread:make-thread
-                                   (lambda ()
-                                     (handler-case
-                                         (list :command command
-                                               :output (uiop:run-program command :output :string :error-output :output :ignore-error-status t))
-                                       (error (e) (list :command command :error (format nil "~a" e)))))))
-                                commands))))
-  (list :conclusion (mapcar (lambda (result)
-                              (list :command (getf result :command)
-                                    :passed (and (getf result :output)
-                                                 (not (string= (getf result :output) "")))))
-                            results)
-        :evidence results))
+(let* ((run (lambda (command)
+              (handler-case
+                  (list :ok (uiop:run-program command :output :string
+                                              :error-output :output
+                                              :ignore-error-status t))
+                (error (e) (list :error (format nil "~a" e))))))
+       (status (funcall run '("git" "status" "--short")))
+       (dirty (and (eq (first status) :ok)
+                   (plusp (length (second status)))))
+       (diff (and dirty (funcall run '("git" "diff" "--stat")))))
+  (list :conclusion (list :dirty (not (null dirty))
+                          :diff-ok (if dirty (eq (first diff) :ok) :skipped))
+        :evidence (remove nil
+                          (list (unless (eq (first status) :ok)
+                                  (cons :status status))
+                                (when (and dirty (not (eq (first diff) :ok)))
+                                  (cons :diff diff))))))
 ```
 
-### 同一条命令作用在多个 PR 上
-
-```lisp
-(let* ((raw (uiop:run-program
-             '("gh" "search" "prs" "--author" "@me" "--state" "open"
-               "--json" "number,repository"
-               "--jq" ".[] | [.repository.nameWithOwner, .number] | @tsv")
-             :output :string :error-output :output :ignore-error-status t))
-       (lines (remove-if (lambda (line) (string= line ""))
-                         (uiop:split-string raw :separator '(#\Newline))))
-       (tasks (mapcar (lambda (line)
-                        (destructuring-bind (repo number)
-                            (uiop:split-string line :separator '(#\Tab))
-                          (lambda ()
-                            (list :repo repo
-                                  :number number
-                                  :output (uiop:run-program
-                                           (list "gh" "pr" "view" number "--repo" repo
-                                                 "--json" "comments,reviews")
-                                           :output :string :error-output :output :ignore-error-status t)))))
-                      lines))
-       (results (mapcar #'sb-thread:join-thread
-                        (mapcar (lambda (task)
-                                  (sb-thread:make-thread
-                                   (lambda ()
-                                     (handler-case (funcall task)
-                                       (error (e) (list :error (format nil "~a" e)))))))
-                                tasks))))
-  (list :conclusion (mapcar (lambda (result)
-                              (list :repo (getf result :repo)
-                                    :number (getf result :number)
-                                    :has-comments (not (string= (getf result :output) ""))))
-                            results)
-        :evidence results))
-```
-
-## 规则
-
-- 互不依赖的命令不要一轮一条。
-- 不要读文件、改文件、再读文件分三轮；一个程序做完。
-- 命令失败时捕获错误字符串，继续下一条。
-- 判据不通过时在同一个程序里换判据重算，不要退出程序再发一轮。
-- 返回 `(:conclusion ... :evidence ...)`，不返回原始输出。
+无依赖的段落把中间那一段换成任务列表：逐个 `sb-thread:make-thread` 派出，`mapcar #'sb-thread:join-thread` 收回。

@@ -1,6 +1,6 @@
 ---
 name: lisp-live-reload
-description: 改完 Lisp 源码要验证前：在 live image 里验证行为的回路与载入范围。
+description: 往 live image 载入源码改动并验证前：live image 里验证行为的回路与载入范围。
 ---
 
 # 源码与镜像的回路
@@ -119,3 +119,21 @@ description: 改完 Lisp 源码要验证前：在 live image 里验证行为的�
 
 镜像里的状态与提交对不上，事后无法重现那次验证。验证完丢弃即可；需要长期保留的改动走项目自己的落盘路径。
 
+## 新 setting 进了镜像，旧配置对象读不到
+
+`define-setting` 随文件载入后，全局注册表有它，早先创建的配置对象没有。
+
+- 判据：`(setinka:find-setting :name)` 为 T，而 `(config :name (setinka:configuration-current))` 报 `SETTING-UNKNOWN`，就是配置对象持有旧 registry 快照，不是代码缺陷。
+- 同一对象上旧 setting 仍可读，`(config :model c)` 正常。只用旧 setting 探测会误判配置已刷新。
+- 遇到这组读数就重建配置，不改源码。
+
+## 把新 setting 装进 live image
+
+新增 setting 后，要让真实入口读到它，按序做：
+
+1. `load` 本轮改过的源码文件。`self.redefine` 不接受 `define-setting` 形式，会报 `self.redefine accepts one complete supported definition`；该宏只能靠 `load` 文件载入。
+2. `(setinka:find-setting :name)` 确认为 T。失败就回第 1 步查载入。
+3. 从 preferences 重建配置：`(autolith::configuration-create)`，读 `(config :name new)` 确认拿到持久化值。
+4. 两处都要 adopt：`(setf (application-configuration app) new)` 和 `(setf (agent-configuration agent) new)`。只换一处，入口仍读旧对象。
+5. 通过真实入口复验，读返回里的 `:model`。只验 `task--model-alias` 的解析结果不算。入口报 `Unknown setting` 就回第 4 步查 adopt。
+6. 这次配置替换只在当前进程有效，不进 mutation journal，不改源码和提交。

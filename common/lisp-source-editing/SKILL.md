@@ -5,7 +5,7 @@ description: 读、找、改 Lisp 源码前：改 Lisp 源码的判据。
 
 # Lisp 源码的改动判据
 
-本文件补充 batch-processing。锚点选择、失败隔离、一次写整份由那份文件规定，这里只写 Lisp 源码特有的判据。
+本文件补充 source-file-editing。锚点选择、失败隔离、一次写整份由那份文件规定，这里只写 Lisp 源码特有的判据。
 
 ## 删重复之前先查依赖
 

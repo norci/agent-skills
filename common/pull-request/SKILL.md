@@ -1,6 +1,6 @@
 ---
 name: pull-request
-description: 开/改 PR 前：PR 交付的平台无关判据。
+description: PR 前
 ---
 
 # PR 交付
@@ -41,7 +41,7 @@ SSH 与 HTTPS 是独立通路，一条不通不证明另一条不通。经代理
 
 检查输出与运行记录不进正文，随失败贴评论。
 
-正文只写当前状态，沿革进 commit message，不写「上面写的 X 是错的」。
+正文只写当前状态，不写沿革。
 
 ## 次序
 

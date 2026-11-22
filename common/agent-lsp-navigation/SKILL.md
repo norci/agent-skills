@@ -67,7 +67,7 @@ description: 打开源码或查调用关系前：符号导航的点边判据与�
 
 ## 工具后缀
 
-下表列的是稳定后缀，不是可直接调用的全名。调用名由命名空间前缀加后缀组成；本会话的调用名形如 `t_23_mcp__agent-l_3D6413C067__get_symbol_s_B6D3E00E85`。工具未激活时先用 `mcp.search` 按后缀激活；激活后再用调用名，未激活时直接调用会报 `Unknown tool`。
+下表列的是稳定后缀，不是可直接调用的全名。调用名由命名空间前缀加后缀组成；本会话的调用名形如 `t_23_mcp__agent-l_3D6413C067__get_symbol_s_B6D3E00E85`。工具未激活时先用 `mcp.search` 按后缀激活。激活只对紧接着的下一次请求有效；跨请求后重新 search。激活后再用调用名，未激活时直接调用会报 `Unknown tool`。
 
 - 起服务与诊断：`detect_lsp_s_36355FEF64`、`start_lsp_539106DB7F`、`get_diagnost_33891339DF`、`did_change_w_FFE1C9F554`、`close_docume_3F506085B3`、`run_build_B7D4E82F58`、`run_tests_C4490FAC4E`
 - 点：`list_symbols_F479F26E3D`、`find_symbol_D6D03BDE14`、`explore_symb_E3793F9B1D`、`explore_A401F16085`、`inspect_symb_E160A85FC0`、`get_symbol_s_B6D3E00E85`、`get_symbol_d_02DA634151`、`go_to_symbol_24C121B040`、`go_to_defini_CA8A563880`、`go_to_declar_74181A2C6D`、`go_to_type_d_0AB7198427`

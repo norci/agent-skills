@@ -31,6 +31,7 @@ description: 打开源码或查调用关系前：符号导航的点边判据与�
 - CJK 文本附近改名或替换函数体后，改后定义数与文件行数须同改前一致，诊断返回为空不作落对证据。
 - 按字符串接线的框架里，改名后用框架的图接口或全项目旧名扫描收残，逐个定点改，框架检查通过才算接线改完。
 - 改名或删除前先问边；符号一删就再没有提问对象。改名先 `dry_run` 看落点，去掉 dry_run 直接改盘。
+  `rename_symbol` 定位用精确 `line` + `column`，落在符号名首字符。`@@def name(@@` 这类 position_pattern 落在 `def` 关键字的列 1，回空结果。一次只改一个符号：同名局部变量在不同函数/文件里是不同符号，各要一次，模块级符号才跨文件一次改全。rename 不碰字符串与注释，apply 后必全项目旧名扫描收残（如 `monkeypatch.setattr(m, "old", ...)` 用 `safe_edit` 单独改）。
 - 新文件无符号可锚：先落全文，此后按符号改。`blast_radius` 与 `detect_changes` 不计未跟踪的新文件。
 - 模拟会话链 `NetDelta=0` 只证明服务没推新诊断；pyright 不推，故不构成证据，仍以项目检查命令判。
 - `commit_session` 一返回就把会话置为 committed，`apply: false` 也一样；用完 `destroy_session` 释放。

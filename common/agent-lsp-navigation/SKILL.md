@@ -63,3 +63,14 @@ description: 打开源码或查调用关系前：符号导航的点边判据与�
 先 `detect_lsp_servers` 看已装服务，再 `start_lsp` 指到项目根；`language_id` 指名缺二进制的语言即整体失败。路径取绝对路径且落在已注册根内。
 
 `start_lsp` 是累加，不是替换；换 root 再调一次，按名查找会扇出到全部服务、混进同名符号，故找定义用符号树写锚。`restart` 会把服务弄死；卡死就停进程后重起。
+
+## 工具全名
+
+工具名带稳定后缀，调用须写全名；本节即全名表，据此直接发调用，不发 `mcp.search`。
+
+- 起服务与诊断：`detect_lsp_s_36355FEF64`、`start_lsp_539106DB7F`、`get_diagnost_33891339DF`、`did_change_w_FFE1C9F554`、`close_docume_3F506085B3`、`run_build_B7D4E82F58`、`run_tests_C4490FAC4E`
+- 点：`list_symbols_F479F26E3D`、`find_symbol_D6D03BDE14`、`explore_symb_E3793F9B1D`、`explore_A401F16085`、`inspect_symb_E160A85FC0`、`get_symbol_s_B6D3E00E85`、`get_symbol_d_02DA634151`、`go_to_symbol_24C121B040`、`go_to_defini_CA8A563880`、`go_to_declar_74181A2C6D`、`go_to_type_d_0AB7198427`
+- 边：`find_callers_4E592466FF`、`find_referen_138A2EF2B2`、`get_document_A9FD965807`、`get_cross_re_74217DD373`、`get_tests_fo_4BDC4CE7C1`、`blast_radius_33A7264388`、`detect_chang_AE0B041C42`
+- 落改动：`safe_edit_F09334A3A7`、`safe_apply_e_86091D3D98`、`preview_edit_68DF82674D`、`apply_edit_1DFC49AE5D`、`replace_symb_FDB669DF98`、`insert_befor_7F1FB01422`、`insert_after_2E6717BB22`、`format_range_059B9020E4`、`format_docum_3D971654DA`、`suggest_fixe_4DA1EAF283`、`refactor_1177E703EE`、`rename_symbo_2244F81233`、`prepare_rena_C29F7F0D4A`、`safe_delete__C9306E5611`
+- 模拟会话：`create_simul_67ECC23B1F`、`simulate_edi_7858C5DFB3`、`simulate_cha_1C01C290FE`、`evaluate_ses_2F31A930CF`、`commit_sessi_CE32CAAF66`、`discard_sess_3B5A6C80A6`、`destroy_sess_E1616F0491`
+- 工作区与缓存：`add_workspac_D79472D42F`、`import_cache_B6BDF114FA`、`export_cache_F8F7E03EBE`、`activate_ski_D71A1DDF90`

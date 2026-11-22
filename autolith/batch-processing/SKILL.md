@@ -1,81 +1,32 @@
 ---
 name: batch-processing
-description: 第一个工具调用前：把一条任务链并进一次批处理。
+description: 第一个工具调用前：把已知的多步工具链压进最少的 turn，不要一步步往返。
 ---
 
-## 链的决策
+## 目的
 
-- 把清单、载体、判据交给 `gate`。
-- 只有用户决定、缺输入、缺授权才收尾，用 `end-turn-p` 判。
-- 调用间有依赖就串行，否则并发，用 `chain-order` 判。
-- 程序写进 `scratchpad:NAME.lisp`，用 `resource.edit` 整份覆盖，`lisp.scratchpad-run` 执行，同一轮做完。
-- 并发项交给 `pmap`，每个线程体自己捕获异常。
-- 中间结果不进对话；要读某一步的结果，把判据写进链里，只回结论。
-- 主链超约二十行或同段逻辑重复，`split-needed-p` 为真就先定义函数。
-- 同一调用第二次出现且参数依赖第一次返回，`chain-twice-p` 为真就停止串联，余下步骤写成程序。
-- 要重放的链交给 `self-contained-p` 判自包含。
+减少 turn 数。每个 turn 有固定延迟；步骤已清楚的链必须并进一次调用，而不是逐步发出。
 
-## 判定函数
+## 先分两类
 
-```lisp
-(defparameter *end-turn* '(:user-decision :missing-input :authorization))
-(defparameter *chain-limit* 20)
+- 探索：下一步取决于上一步的读数。允许一次一个读；读到能定下一步就停。
+- 已知链：步骤与依赖都已清楚（例如 编辑 → ruff → pytest → md5 → 提交）。必须批量，用下节机制。
 
-(defun step-p (x)
-  (and (listp x) (= 3 (length x)) (stringp (first x))
-       (every #'identity (rest x))))
+## 批量机制（按序选）
 
-(defun criteria-p (form)
-  (and form (consp form) (not (stringp (first form)))))
+- 互不依赖的调用（读多个文件、改不同文件或不重叠区域、多个 LSP safe_edit）放进一个 `multi_tool_use.parallel` 块。
+- 有依赖的 shell 链放进一个 `shell.run`：`set -e` 串行，末尾只打印判据结论行。中途失败即停，不会误提交。
+- 同一文件的多处编辑按原行号在一条 `resource.edit` 里发多个操作，避免多次往返。
+- 不要用 Lisp REPL 定义“判定函数”再单独调用。纯 Lisp 的 `pmap` 不调用真实工具，只会多出写文件、跑文件两个 turn，真实工具最终仍逐个发出。
 
-(defun gate (&key checklist carrier criteria)
-  (let ((missing (remove nil
-                         (list (unless (and checklist (every #'step-p checklist)) :checklist)
-                               (unless (member carrier '(:program :chain)) :carrier)
-                               (unless (criteria-p criteria) :criteria)))))
-    (when missing (error "entry gate missing ~{~a~^, ~}" missing))
-    t))
+## 判据即数据
 
-(defun end-turn-p (reason)
-  (and (member reason *end-turn*) t))
+把通过条件写进链本身：ruff 退出码、pytest 读 `.report.json` 的 `summary`、md5 比对、`git diff --check`。链只回结论和必要数值，不回中间输出。中间结果留在 shell 日志或文件里，不进对话。
 
-(defun chain-order (calls)
-  (if (some #'second calls) :serial :parallel))
+## 收尾条件
 
-(defun nodes (form)
-  (let (acc)
-    (labels ((walk (x)
-               (push x acc)
-               (when (consp x) (mapc #'walk x))))
-      (walk form))
-    acc))
+只有用户决策、缺输入、缺授权、闸失败才结束 turn。否则把剩余步骤并进下一批。
 
-(defun split-needed-p (form)
-  (let* ((all (nodes form))
-         (printed (mapcar (lambda (f) (format nil "~s" f))
-                          (remove-if-not #'consp all))))
-    (or (> (length (remove-if #'consp all)) *chain-limit*)
-        (some (lambda (f) (> (count f printed :test #'string=) 1)) printed))))
+## LSP 编辑
 
-(defun chain-twice-p (names-and-args)
-  (let ((names (mapcar #'first names-and-args)))
-    (and (> (length names) (length (remove-duplicates names)))
-         t)))
-
-(defun self-contained-p (defined used)
-  (null (set-difference used defined)))
-```
-
-## 并发实现
-
-```lisp
-(defun pmap-one (fn item)
-  (sb-thread:make-thread
-   (lambda ()
-     (handler-case (progn (funcall fn item) :ok)
-       (error (e) (list :failed (princ-to-string e)))))))
-
-(defun pmap (fn items)
-  (let ((threads (loop for item in items collect (pmap-one fn item))))
-    (mapcar #'sb-thread:join-thread threads)))
-```
+用 `safe_edit`（完整路径 + `old_text`/`new_text`，`net_delta=0` 为安全）。不同文件的编辑放同一个 parallel 块。

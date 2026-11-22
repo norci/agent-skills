@@ -18,12 +18,6 @@ description: 第一个工具调用前：把一条任务链并进一次批处理�
 ## 判定函数
 
 ```lisp
-(defpackage :batch
-  (:use :cl)
-  (:export #:gate #:end-turn-p #:chain-order
-           #:split-needed-p #:chain-twice-p #:self-contained-p))
-(in-package :batch)
-
 (defparameter *end-turn* '(:user-decision :missing-input :authorization))
 (defparameter *chain-limit* 20)
 
@@ -70,15 +64,11 @@ description: 第一个工具调用前：把一条任务链并进一次批处理�
 
 (defun self-contained-p (defined used)
   (null (set-difference used defined)))
-
-(in-package :cl-user)
 ```
 
 ## 并发实现
 
 ```lisp
-(in-package :batch)
-
 (defun pmap-one (fn item)
   (sb-thread:make-thread
    (lambda ()
@@ -88,6 +78,4 @@ description: 第一个工具调用前：把一条任务链并进一次批处理�
 (defun pmap (fn items)
   (let ((threads (loop for item in items collect (pmap-one fn item))))
     (mapcar #'sb-thread:join-thread threads)))
-
-(in-package :cl-user)
 ```

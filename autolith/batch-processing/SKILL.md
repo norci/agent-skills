@@ -5,7 +5,7 @@ description: 第一个工具调用前：把已知的多步工具链压进最少�
 
 ## 目的
 
-减少 turn 数。每个 turn 有固定延迟；步骤已清楚的链必须并进一次调用，而不是逐步发出。
+减少 turn 数。每 turn 有延迟；步骤已清楚的链必须并进一次调用，而不是逐步发出。
 
 ## 先分两类
 
@@ -16,17 +16,16 @@ description: 第一个工具调用前：把已知的多步工具链压进最少�
 ## 批量机制（按序选）
 
 - 互不依赖的调用（读多个文件、改不同文件或不重叠区域）放进一个 `multi_tool_use.parallel` 块。
-- 有依赖的 shell 链放进一个 `shell.run`：`set -e` 串行，末尾只打印判据结论行。中途失败即停，不会误提交。
-- 同一文件的多处编辑按原行号在一条 `resource.edit` 里发多个操作，避免多次往返。
-- 不要用 Lisp REPL 定义“判定函数”再单独调用。纯 Lisp 的 `pmap` 不调用真实工具，只会多出写文件、跑文件两个 turn，真实工具最终仍逐个发出。
+- 有依赖的 shell 链放进一个 `set -e` 串行，末尾只打印判据结论行。中途失败即停。
+- 同一文件的多处编辑按原行号在一次 `edit` 里发多个操作，避免多次往返。
 
 ## 先读全，再改全
 
-`resource.edit` 按原行号和 revision 定位：一次编辑后，之前读到的行号与 revision 全部失效。流程固定为：先把所有要改的窗口在一次 parallel 里读全，再把所有编辑在一次 parallel 里发完， editing 与 reading 不穿插。中途回头补读，会撞上「lines not fully visible under this revision」，白费两轮。
+流程固定为：先把所有要改的窗口在一次 parallel 里读全，再把所有编辑在一次 parallel 里发完， editing 与 reading 不穿插。
 
 ## 判据即数据
 
-把通过条件写进链本身：ruff 退出码、pytest 读 `.report.json` 的 `summary`、md5 比对、`git diff --check`。链只回结论和必要数值，不回中间输出。中间结果留在 shell 日志或文件里，不进对话。
+把通过条件写进链本身。链只回结论和必要数值，不回中间输出。中间结果留在 shell 日志或文件里，不进对话。
 
 ## 收尾条件
 

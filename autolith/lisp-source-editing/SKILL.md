@@ -3,23 +3,17 @@ name: lisp-source-editing
 description: 读、找、改 Lisp 源码前：改 Lisp 源码的判据。
 ---
 
-# Lisp 源码的改动判据
-
-本文件补充 source-file-editing。锚点选择、失败隔离、一次写整份由那份文件规定，这里只写 Lisp 源码特有的判据。
-
 ## 删重复之前先查依赖
 
 判据：要删的符号在本文件之外的引用次数为 0。
 
 做法：在所有扩展文件里搜该符号名；有引用就不删，把新实现并入唯一一份，旧名改为转发。
 
-证据：本会话 helper 文件里的 `form-count` 被 lisp-ast-tools.lisp 引用两处，`form-source` 一处。按同名查不到重复就删，会拆掉那边的依赖。
-
 ## 语法判据用可读 form 数
 
 判据：`(form-count text)` 等于顶层层数之和（in-package、declaim、每个 defun 各一）。
 
-子串计数不是判据。`(count-substring "(defun " text)` 会被 `(format nil "(defun ~A" name)` 这类字符串常量命中，本会话因此把 22 个 defun 数成 23，白查一轮。
+子串计数不是判据。`(count-substring "(defun " text)` 会被 `(format nil "(defun ~A" name)` 这类字符串常量命中
 
 ## 写入前两路验语法
 

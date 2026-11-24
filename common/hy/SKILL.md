@@ -1,7 +1,24 @@
 ---
 name: hy
-description: 写或测 Hy 代码时：宏展开、Python 互操作与测试覆盖率口径。
+description: 写或测 Hy 代码时：用现成宏与读器，不重复造。
 ---
+
+## 先查现成写法
+
+动手前读两张表：Hy 源码树的 `docs/api.rst`（Core macros、Hy、Readers、Python operators 四章），与 `hyrule/` 下各 `.hy` 里的 `defmacro` 名字。
+
+判据：本段要写的东西在两张表里有名字，就用那个名字。两张表都没有，才写 helper。
+
+- 造 dict 写 `dfor`，造 list 写 `lfor`，造 set 写 `sfor`。推导式的值可写 `#* ITERABLE`，键值可写 `#** MAPPING`。
+- 条件写 `cond`（默认支写 `True`）、`when`、`match`；比较链写 `chainc`。
+- 提前跳出写 `(require hyrule [block])` 的 `block` 加 `block-ret`。
+- 尾递归写 `(require hyrule [loop])` 加 `(import hyrule [recur])`，绑定表每项带初值。自递归函数不手写。
+- 局部解构写 `(require hyrule [let+ setv+ defn+])`，绑定项是「模式 值」对。核心 `let` 与 `setv` 只收名字。
+- 多维索引写 `(require hyrule [ncut])`，如 `(ncut df.loc : ["B"])`。逐层取 dict 写 `(.get (.get m k1) k2)`。
+- 原地改集合写 `(import hyrule.collections [assoc])` 的 `assoc`；返回链式结果写 `(require hyrule [doto])`。
+- 字符串插值写 f-string，不用 `.format`。格式规格只作用在变量上，字面量要格式化先绑名。
+- 跨模块调函数写 `hy.I`，调宏写 `hy.R`。
+- `defreader` 收掉重复外壳之前，先确认 `defmacro` 做不到。
 
 ## 互操作
 
@@ -64,6 +81,28 @@ Python 侧先 `import hy` 才能导入 `.hy` 模块。在包的 `__init__.py` �
 - dict 的 `**` 展开不与 `dfor` 直接拼在同一个字面量里。先把键值收进 list，再用 `dict` 构造。
 - `__name__` 已是字符串，不要加括号调用。
 
+## 可读性
+
+判据：读到某一行时，不必先把读写样板翻译回业务概念。业务顺序就是代码顺序，算式在字面上就是算式。
+
+线性数据变换用 `->` 竖排，一步一行。集合运算、树形求和、条件内嵌改用嵌套形式；`->` 把一行摊成三层的地方不要用。
+
+重复的垂直样板收进 `defmacro`：逐列同一变换、每组同一折叠、字段与渲染串本属一处。宏的参数写业务名，body 写算式，展开式里不留样板。
+
+宏内临时名一律 `hy.gensym`，避免撞调用方的同名局部变量。
+
+外壳也能由读器收掉。例如图规格里每个节点都要 `(fn [依赖...] ...)`，就让 `#dag` 读器按依赖名补形参，节点体只写算式；显式 `fn` 原样保留，留给形参改名之处。
+
+一个宏只收一种形态。宏名读出来就是动作，不要靠注释解释。
+
+改完用 `hy2py` 看展开：展开式应比原式短，且不含多余局部名。
+
+## 改 .hy 后的缓存
+
+`.hy` 模块的字节码缓存在 `__pycache__`。读器宏的展开结果已写进缓存时，删掉源文件里的宏再跑测试仍会拿到旧展开，表现为断言莫名失败而源码看着对。
+
+改 `.hy` 模块或读器宏之后，先删仓库内 `__pycache__`（避开 `.venv`）再跑测试。
+
 ## 测试
 
 被测模块是 `.hy`、测试是 `.py` 时不需要收集钩子。包入口写 `import hy` 后，pytest 照常收集 `.py` 测试。
@@ -99,6 +138,8 @@ coverage.py 采集 `.hy` 的行到数据文件，但报告阶段用 Python 解�
 每个探针只打印判据结论与关键值，不打印整份状态。
 
 同一形状第二次失败时，回本文找该形状，不猜第二个写法。
+
+模块内的探针脚本要放在仓库根才能 import 包；放在 `/tmp` 会报 `No module named '<包名>'`。
 
 ## 核对
 

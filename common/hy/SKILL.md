@@ -1,0 +1,105 @@
+---
+name: hy
+description: 写或测 Hy 代码时：宏展开、Python 互操作与测试覆盖率口径。
+---
+
+## 互操作
+
+Python 侧先 `import hy` 才能导入 `.hy` 模块。在包的 `__init__.py` 写 `import hy`，调用方照常 `from pkg.mod import fn`。
+
+宏跨模块传递用 `require`，不用 `import`。`import` 在运行期执行，宏在编译期展开。
+
+`(require mod :readers *)` 只引入读器，不把 `mod` 绑进调用方命名空间。调用方要同时 `(import mod)` 才能取模块内对象。
+
+线程宏 `->`、`->>`、`doto` 不在 Hy 核心，来自 Hyrule。每个用到它的模块自己 `(require hyrule [->])`。
+
+## 宏
+
+`defmacro` 的参数只接受 symbol、`[symbol default]`、`/`、`#* args`。keyword 作为字面 Keyword model 传入，不是函数的关键字参数。
+
+模板用 quasiquote：`~` 求值插入一项，`~@` 拼接可迭代值到父级顺序 model。宏在编译期收到 model，收不到运行期对象；要生成对象，就让展开式写出构造它的代码。
+
+宏体引用的普通函数必须在展开时已存在。把这类 helper 包进 `eval-when-compile`（只编译期用）或 `eval-and-compile`（运行期也用）。
+
+同一模块里，宏定义必须出现在调用它的顶层 form 之前。
+
+宏体里 `import` 的模块在调用处不可见。展开式里写模块全路径，例如 `(hy.I.<模块>.fn "x")`。
+
+重复插入实参或需要临时变量时用 `hy.gensym` 生成名字。
+
+## 读器
+
+`defreader` 用 `(.parse-one-form &reader)` 读一个 form，返回值必须是 model 或 `None`。读器不能在定义它的同一个顶层 form 里使用。
+
+模型字面量用 `hy.models`：`Expression`、`Symbol`、`String`、`Tuple`、`Integer`。`Symbol` 拒收含点号或横线的名字；要写带模块路径的全名，用 `hy.read` 读出表达式当调用头。
+
+要给运行期一个模型而不是一层调用，就把它包成 `(quote model)`。`'` 是读取期语法糖，读出的模型与手写 `(quote ...)` 相等。
+
+`HyReader` 只有 `parse`、`parse_one_form`、`parse_forms_until`，没有 `read`。装载带自定义读器的源码用 `(hy.read-many source :reader reader)`；`reader` 必须用关键字传，位置参数会被当作文件名。
+
+## 求值与时序
+
+函数实参会被求值。要让一段代码留到运行期再算，就显式 quote。
+
+判两个模型是否同形用相等比较。`hy.repr` 给可回读的源码形式，`str` 给调试形式，两者都不是源码原文。
+
+`(try ...)` 不是表达式，不能放在调用实参或 `print` 的位置。
+
+`hy.compile` 不存在，用 `hy.compiler.hy_compile`。`hy2py` 会执行编译期代码，只用来核展开，不作构建步骤。
+
+## Hy 语法要点
+
+- 属性访问写 `obj.attr` 或 `(. obj attr)`。`(.attr obj)` 是方法调用。
+- 取默认值写 `(.get mapping key default)`。`(get mapping key default)` 不是取默认值。
+- 切片取尾段写 `(cut seq 1 None)`。`(cut seq 1)` 取的是单个下标。
+- `#(...)` 是元组字面量，不是调用。`(tuple a b)` 不接受两个实参，元组写 `#(a b)`。
+- 不等写 `(!= a b)`。`not=` 不是 Hy 的运算符。
+- 解构用元组模式 `#(a b)`；列表模式 `[a b]` 不能作赋值目标。
+- `for`、`gfor`、`lfor` 的 `[a b]` 是解构二元组，不是「变量与可迭代对象」。取值子句写 `symbol iterable` 或 `[item iterable]`。
+- 方法装饰器写在 `defn` 之后、返回标注之前：`(defn [staticmethod] #^ str f [] ...)`。返回标注写在名字之前：`(defn #^ None method [self] ...)`。
+- 泛型标注写 `(get typing.ClassVar str)`。
+- 方法调用的实参位置不接受 `#*` 解包。
+- 链式表达式里用运算符代替 Python 特殊方法：`(/ (mod.col "x") 2)`；幂用 `(.pow expr 2)`。
+- f-string 的格式规格前加空格：`f"{value :.1f}"`。f-string 外不要再套括号。
+- dict 的 `**` 展开不与 `dfor` 直接拼在同一个字面量里。先把键值收进 list，再用 `dict` 构造。
+- `__name__` 已是字符串，不要加括号调用。
+
+## 测试
+
+被测模块是 `.hy`、测试是 `.py` 时不需要收集钩子。包入口写 `import hy` 后，pytest 照常收集 `.py` 测试。
+
+测试文件本身是 `.hy` 时，在仓库根 `conftest.py` 加官方钩子：
+
+```python
+import hy, pytest
+
+def pytest_collect_file(file_path, parent):
+    if file_path.suffix == ".hy" and file_path.name != "__init__.hy":
+        return pytest.Module.from_parent(parent, path=file_path)
+```
+
+按目录收集，不要把单个 `.hy` 文件直接传给 pytest。直接点名会触发断言改写并报 SyntaxError。必须点名时加 `--assert=plain`。
+
+`.hy` 测试文件同时写 `(import mod)` 与 `(require mod :readers *)`：前者取模块内对象，后者取读器。
+
+断言异常类型前先确认抛在哪一层。读器内抛出的违例是 `LexException`（`SyntaxError` 的子类），不是 `ValueError`；被调用函数抛出的按函数自己的类。
+
+## 覆盖率
+
+coverage.py 采集 `.hy` 的行到数据文件，但报告阶段用 Python 解析器解析 `.hy` 失败，静默跳过该文件。`.hy` 不进报告，也不进 `--cov-fail-under` 的分母。
+
+把生产模块改成 `.hy` 等于让这些模块退出覆盖率守门。动手前先确认这个盲区是否被接受。不接受就写 coverage file tracer 插件；否则不要把「覆盖率绿」当成通过。
+
+`tests/*` 已在 coverage omit 中的项目，测试夹具改 `.hy` 不增加新盲区。
+
+## 探查不熟语法
+
+一次写多个独立探针脚本，一个假设一个文件，逐个跑并汇总。单个脚本报错不挡其他脚本。
+
+每个探针只打印判据结论与关键值，不打印整份状态。
+
+同一形状第二次失败时，回本文找该形状，不猜第二个写法。
+
+## 核对
+
+改 `.hy` 前的基线：跑通全量测试，记下通过数与覆盖率。改完后用同一组测试对照行为，重点核宏展开产出的表达式、dataclass 字段与渲染串、夹具数据逐位等价。宏展开可用 `hy2py` 或 `hy.macroexpand-1` 核对。

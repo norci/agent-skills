@@ -1,6 +1,6 @@
 ---
 name: agent-lsp-navigation
-description: 打开源码或查调用关系前：符号导航的点边判据与走查顺序。
+description: 打开 python 源码或查调用关系前：符号导航的点边判据与走查顺序。
 ---
 
 ## 点与边

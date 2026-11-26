@@ -5,19 +5,51 @@ description: 写或测 Hy 代码时：用现成宏与读器，不重复造。
 
 ## 先查现成写法
 
-查两张表：Hy 源码 `docs/api.rst` 的接口索引，以及 Hyrule 源码 `docs/index.rst` 的 Reference 列表。
-
-判据：本段要写的东西在两张表里有名字，就用那个名字。两张表都没有，才写 helper。
+先看下文接口清单。清单里有名字，就用那个名字。清单里没有，才写 helper。
 
 - 造 dict 写 `dfor`，造 list 写 `lfor`，造 set 写 `sfor`，造迭代器写 `gfor`。`lfor`、`sfor`、`gfor` 的值可写 `#* ITERABLE`；`dfor` 的最后一项可写 `#** MAPPING`。
 - 条件写 `cond`（默认支写 `True`）、`when`、`match`；比较链写 `chainc`。
-- 提前跳出写 `(require hyrule [block])` 的 `block` 加 `block-ret`。
-- 尾递归写 `(require hyrule [loop])` 加 `(import hyrule [recur])`，绑定表每项带初值。自递归函数不手写。
-- 局部解构写 `(require hyrule [let+ setv+ defn+ fn+])`，绑定项是「模式 值」对。核心 `setv` 和 `let` 只按位置解构，按键名取值要用 Hyrule 的模式。
-- 多维索引写 `(require hyrule [ncut])`，如 `(ncut df.loc : ["B"])`。逐层取 dict 写 `(.get (.get m k1) k2)`。
-- 原地改集合写 `(import hyrule.collections [assoc])` 的 `assoc`；返回链式结果写 `(require hyrule [doto])`。
+- 提前跳出写 `block` 加 `block-ret`，跨块跳出写 `block-ret-from`。
+- 尾递归写 `loop` 加 `recur`，绑定表每项带初值。自递归函数不手写。
+- 局部解构写 `let+ setv+ defn+ fn+`，绑定项是「模式 值」对。核心 `setv` 和 `let` 只按位置解构，按键名取值要用 Hyrule 的模式。
+- 多维索引写 `ncut`，如 `(ncut df.loc : ["B"])`。逐层取 dict 写 `(.get (.get m k1) k2)`。
+- 原地改集合写 `assoc`；返回链式结果写 `doto`。
 - 跨模块调函数写 `hy.I`，调宏写 `hy.R`；模块路径中的点写斜杠，如 `hy.I.os/path.basename`。
 - `defreader` 收掉重复外壳之前，先确认 `defmacro` 做不到。
+
+## 接口清单
+
+核心宏自动可用。Hyrule 名字从顶层取：`(require hyrule * :readers *)` 与 `(import hyrule *)`。下列各行按模块分组。
+
+### Hy 核心
+
+- 基础与定义：`do`、`do-mac`、`eval-and-compile`、`eval-when-compile`、`py`、`pys`、`pragma`、`setv`、`setx`、`let`、`global`、`nonlocal`、`del`、`annotate`、`deftype`、`defn`、`fn`、`defmacro`、`defreader`、`defclass`、`import`、`require`、`export`、`get-macro`、`local-macros`。
+- 引用与展开：`quote`、`quasiquote`、`unquote`、`unquote-splice`、`.`、`unpack-iterable`、`unpack-mapping`、`hy.macroexpand`、`hy.macroexpand-1`。
+- 控制与运算：`if`、`when`、`cond`、`while`、`break`、`continue`、`for`、`lfor`、`dfor`、`gfor`、`sfor`、`with`、`match`、`raise`、`try`、`return`、`yield`、`await`、`chainc`、`assert`。
+- 占位宏：`else`、`except`、`except*`、`finally`。`try` 的 `except` 子句和 `while` 的 `else` 由外层宏解释。
+- 读器糖：`'` 为 `quote`，`` ` `` 为 `quasiquote`，`~` 为 `unquote`，`~@` 为 `unquote-splice`，`#^` 为 `annotate`，`#*` 为 `unpack-iterable`，`#**` 为 `unpack-mapping`。
+
+### Hy 模块
+
+- 函数：`hy.read`、`hy.read-many`、`hy.eval`、`hy.repr`、`hy.repr-register`、`hy.mangle`、`hy.unmangle`、`hy.macroexpand`、`hy.macroexpand-1`、`hy.gensym`、`hy.as-model`。
+- 对象与读器：`hy.I`、`hy.R`、`hy.HyReader`、`hy.Reader`、`hy.PrematureEndOfInput`。`hy.R` 是编译器语法糖。
+- 模型类型：`hy.models.Object`、`String`、`Bytes`、`Symbol`、`Keyword`、`Integer`、`Float`、`Complex`、`Sequence`、`FComponent`、`FString`、`List`、`Dict`、`Expression`、`Set`、`Tuple`、`Lazy`。
+- Python 运算符：`+`、`-`、`*`、`**`、`/`、`//`、`%`、`@`、`<<`、`>>`、`&`、`|`、`^`、`bnot`、`<`、`>`、`<=`、`>=`、`=`、`!=`、`and`、`or`、`not`、`is`、`is-not`、`in`、`not-in`、`get`、`cut`。作为函数用 `(import hy.pyops *)`；宏名优先。Python 的 `==` 写作 `=`，`~` 写作 `bnot`。
+
+### Hyrule
+
+- `hyrule.anaphoric`：读器 `%`（`#%`），宏 `ap-if`、`ap-each`、`ap-each-while`、`ap-map`、`ap-map-when`、`ap-filter`、`ap-reject`、`ap-dotimes`、`ap-first`、`ap-last`、`ap-reduce`、`ap-when`、`ap-with`。`#%` 用 `%1`、`%2`、`%*` 和 `%**`；`ap-*` 用 `it`。
+- `hyrule.argmove`：宏 `->`、`->>`、`as->`、`some->`、`doto`。
+- `hyrule.collections`：函数 `assoc`，宏 `ncut`，读器 `s`（`#s`）。
+- `hyrule.control`：宏 `block`、`branch`、`case`、`cfor`、`defmain`、`do-n`、`ebranch`、`ecase`、`lif`、`list-n`、`loop`、`unless`；类 `recur`；`block` 专用形式 `block-ret`、`block-ret-from`。
+- `hyrule.db`：函数 `sqlite-db`、`sqlq`，类 `AttributeRow`，宏 `sqlexec`。
+- `hyrule.destructure`：宏 `defn+`、`dict=:`、`fn+`、`let+`、`setv+`。
+- `hyrule.iterables`：函数 `butlast`、`coll?`、`distinct`、`drop-last`、`flatten`、`rest`、`thru`。
+- `hyrule.macrotools`：读器 `/`（`#/`），宏 `def-gensyms`、`defmacro-kwargs`、`defmacro!`，函数 `macroexpand-all`、`map-hyseq`、`map-model`、`match-fn-params`。
+- `hyrule.oop`：宏 `meth`、`ameth`。
+- `hyrule.hypprint`：类 `PrettyPrinter`，函数 `pformat`、`pp`、`pprint`、`readable?`、`recursive?`、`saferepr`。
+- `hyrule.sequences`：类 `Sequence`，宏 `seq`、`defseq`，函数 `end-sequence`。
+- `hyrule.misc`：宏 `comment`、`of`、`pun`、`smacrolet`，函数 `constantly`、`dec`、`inc`、`import-path`、`parse-args`、`sign`、`xor`，读器 `__`（`#__`）。
 
 ## 互操作
 

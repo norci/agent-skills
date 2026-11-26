@@ -5,19 +5,18 @@ description: 写或测 Hy 代码时：用现成宏与读器，不重复造。
 
 ## 先查现成写法
 
-动手前读两张表：Hy 源码树的 `docs/api.rst`（Core macros、Hy、Readers、Python operators 四章），与 `hyrule/` 下各 `.hy` 里的 `defmacro` 名字。
+查两张表：Hy 源码 `docs/api.rst` 的接口索引，以及 Hyrule 源码 `docs/index.rst` 的 Reference 列表。
 
 判据：本段要写的东西在两张表里有名字，就用那个名字。两张表都没有，才写 helper。
 
-- 造 dict 写 `dfor`，造 list 写 `lfor`，造 set 写 `sfor`。推导式的值可写 `#* ITERABLE`，键值可写 `#** MAPPING`。
+- 造 dict 写 `dfor`，造 list 写 `lfor`，造 set 写 `sfor`，造迭代器写 `gfor`。`lfor`、`sfor`、`gfor` 的值可写 `#* ITERABLE`；`dfor` 的最后一项可写 `#** MAPPING`。
 - 条件写 `cond`（默认支写 `True`）、`when`、`match`；比较链写 `chainc`。
 - 提前跳出写 `(require hyrule [block])` 的 `block` 加 `block-ret`。
 - 尾递归写 `(require hyrule [loop])` 加 `(import hyrule [recur])`，绑定表每项带初值。自递归函数不手写。
-- 局部解构写 `(require hyrule [let+ setv+ defn+])`，绑定项是「模式 值」对。核心 `let` 与 `setv` 只收名字。
+- 局部解构写 `(require hyrule [let+ setv+ defn+ fn+])`，绑定项是「模式 值」对。核心 `setv` 和 `let` 只按位置解构，按键名取值要用 Hyrule 的模式。
 - 多维索引写 `(require hyrule [ncut])`，如 `(ncut df.loc : ["B"])`。逐层取 dict 写 `(.get (.get m k1) k2)`。
 - 原地改集合写 `(import hyrule.collections [assoc])` 的 `assoc`；返回链式结果写 `(require hyrule [doto])`。
-- 字符串插值写 f-string，不用 `.format`。格式规格只作用在变量上，字面量要格式化先绑名。
-- 跨模块调函数写 `hy.I`，调宏写 `hy.R`。
+- 跨模块调函数写 `hy.I`，调宏写 `hy.R`；模块路径中的点写斜杠，如 `hy.I.os/path.basename`。
 - `defreader` 收掉重复外壳之前，先确认 `defmacro` 做不到。
 
 ## 互操作
@@ -40,7 +39,7 @@ Python 侧先 `import hy` 才能导入 `.hy` 模块。在包的 `__init__.py` �
 
 同一模块里，宏定义必须出现在调用它的顶层 form 之前。
 
-宏体里 `import` 的模块在调用处不可见。展开式里写模块全路径，例如 `(hy.I.<模块>.fn "x")`。
+宏体里 `import` 的模块在调用处不可见。展开式里写模块全路径，例如 `(hy.I.os/path.basename "x")`。
 
 重复插入实参或需要临时变量时用 `hy.gensym` 生成名字。
 
@@ -48,11 +47,11 @@ Python 侧先 `import hy` 才能导入 `.hy` 模块。在包的 `__init__.py` �
 
 `defreader` 用 `(.parse-one-form &reader)` 读一个 form，返回值必须是 model 或 `None`。读器不能在定义它的同一个顶层 form 里使用。
 
-模型字面量用 `hy.models`：`Expression`、`Symbol`、`String`、`Tuple`、`Integer`。`Symbol` 拒收含点号或横线的名字；要写带模块路径的全名，用 `hy.read` 读出表达式当调用头。
+模型字面量用 `hy.models`：`Expression`、`Symbol`、`String`、`Tuple`、`Integer`。`Symbol` 拒收点号，横线合法；要写带模块路径的全名，用 `hy.read` 读出表达式当调用头。
 
 要给运行期一个模型而不是一层调用，就把它包成 `(quote model)`。`'` 是读取期语法糖，读出的模型与手写 `(quote ...)` 相等。
 
-`HyReader` 只有 `parse`、`parse_one_form`、`parse_forms_until`，没有 `read`。装载带自定义读器的源码用 `(hy.read-many source :reader reader)`；`reader` 必须用关键字传，位置参数会被当作文件名。
+`HyReader` 提供 `parse`、`parse_one_form`、`parse_forms_until` 等方法，没有 `read`。装载带自定义读器的源码用 `(hy.read-many source :reader reader)`；`reader` 必须用关键字传，位置参数会被当作文件名。
 
 ## 求值与时序
 
@@ -60,7 +59,7 @@ Python 侧先 `import hy` 才能导入 `.hy` 模块。在包的 `__init__.py` �
 
 判两个模型是否同形用相等比较。`hy.repr` 给可回读的源码形式，`str` 给调试形式，两者都不是源码原文。
 
-`(try ...)` 不是表达式，不能放在调用实参或 `print` 的位置。
+`(try ...)` 是表达式，可直接放在调用实参、`print` 或 `(setx ...)` 里。
 
 `hy.compile` 不存在，用 `hy.compiler.hy_compile`。`hy2py` 会执行编译期代码，只用来核展开，不作构建步骤。
 
@@ -71,14 +70,14 @@ Python 侧先 `import hy` 才能导入 `.hy` 模块。在包的 `__init__.py` �
 - 切片取尾段写 `(cut seq 1 None)`。`(cut seq 1)` 取的是单个下标。
 - `#(...)` 是元组字面量，不是调用。`(tuple a b)` 不接受两个实参，元组写 `#(a b)`。
 - 不等写 `(!= a b)`。`not=` 不是 Hy 的运算符。
-- 解构用元组模式 `#(a b)`；列表模式 `[a b]` 不能作赋值目标。
-- `for`、`gfor`、`lfor` 的 `[a b]` 是解构二元组，不是「变量与可迭代对象」。取值子句写 `symbol iterable` 或 `[item iterable]`。
+- 赋值目标可用 `#(a b)` 或 `[a b]`；两种写法都按位置解构。
+- 推导式头部的 `[...]` 是子句列表。取值子句写 `value iterable`，`value` 可为 `[a b]`；解构二元组写作 `[[a b] items]`。
 - 方法装饰器写在 `defn` 之后、返回标注之前：`(defn [staticmethod] #^ str f [] ...)`。返回标注写在名字之前：`(defn #^ None method [self] ...)`。
 - 泛型标注写 `(get typing.ClassVar str)`。
-- 方法调用的实参位置不接受 `#*` 解包。
+- 方法调用的实参位置可用 `#*`：`(.format "{}" #* [1])`。
 - 链式表达式里用运算符代替 Python 特殊方法：`(/ (mod.col "x") 2)`；幂用 `(.pow expr 2)`。
-- f-string 的格式规格前加空格：`f"{value :.1f}"`。f-string 外不要再套括号。
-- dict 的 `**` 展开不与 `dfor` 直接拼在同一个字面量里。先把键值收进 list，再用 `dict` 构造。
+- f-string 的格式规格前留空格：`f"{value :.1f}"`、`f"{1 :.1f}"` 都成立。Hy 在插值里只读取一个 form。
+- `dfor` 末尾写 `#** MAPPING` 可直接展开映射，例如 `(dfor x [{1 10} {2 20}] #** x)`。
 - `__name__` 已是字符串，不要加括号调用。
 
 ## 可读性
@@ -110,10 +109,17 @@ Python 侧先 `import hy` 才能导入 `.hy` 模块。在包的 `__init__.py` �
 测试文件本身是 `.hy` 时，在仓库根 `conftest.py` 加官方钩子：
 
 ```python
+from pathlib import Path
 import hy, pytest
 
+TESTS = Path.cwd() / "tests"
+
 def pytest_collect_file(file_path, parent):
-    if file_path.suffix == ".hy" and file_path.name != "__init__.hy":
+    if (
+        file_path.suffix == ".hy"
+        and TESTS in file_path.parents
+        and file_path.name != "__init__.hy"
+    ):
         return pytest.Module.from_parent(parent, path=file_path)
 ```
 

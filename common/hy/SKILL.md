@@ -1,6 +1,6 @@
 ---
 name: hy
-description: 写或测 Hy 代码时：用现成宏与读器，不重复造。
+description: 写或测 Hy 代码时：用现成宏与读器，按 Python 语义落笔。
 ---
 
 ## 先查现成写法
@@ -8,9 +8,9 @@ description: 写或测 Hy 代码时：用现成宏与读器，不重复造。
 先看下文接口清单。清单里有名字，就用那个名字。清单里没有，才写 helper。
 
 - 造 dict 写 `dfor`，造 list 写 `lfor`，造 set 写 `sfor`，造迭代器写 `gfor`。`lfor`、`sfor`、`gfor` 的值可写 `#* ITERABLE`；`dfor` 的最后一项可写 `#** MAPPING`。
-- 条件写 `cond`（默认支写 `True`）、`when`、`match`；比较链写 `chainc`。
+- 条件写 `cond`（分支成对，默认支写 `True`）、`when`、`match`；`case` 与 `branch` 的默认支写 `else`；比较链写 `chainc`。
 - 提前跳出写 `block` 加 `block-ret`，跨块跳出写 `block-ret-from`。
-- 尾递归写 `loop` 加 `recur`，绑定表每项带初值。自递归函数不手写。
+- 尾递归写 `loop` 加 `recur`，绑定表每项写 `[名字 初值]`，如 `[[x 0] [acc 1]]`。自递归函数不手写。
 - 局部解构写 `let+ setv+ defn+ fn+`，绑定项是「模式 值」对。核心 `setv` 和 `let` 只按位置解构，按键名取值要用 Hyrule 的模式。
 - 多维索引写 `ncut`，如 `(ncut df.loc : ["B"])`。逐层取 dict 写 `(.get (.get m k1) k2)`。
 - 原地改集合写 `assoc`；返回链式结果写 `doto`。
@@ -54,6 +54,7 @@ description: 写或测 Hy 代码时：用现成宏与读器，不重复造。
 ## 互操作
 
 Python 侧先 `import hy` 才能导入 `.hy` 模块。在包的 `__init__.py` 写 `import hy`，调用方照常 `from pkg.mod import fn`。
+- Hy 编译到 Python AST。对象、异常、迭代按 Python 语义求值。
 
 宏跨模块传递用 `require`，不用 `import`。`import` 在运行期执行，宏在编译期展开。
 
@@ -96,6 +97,10 @@ Python 侧先 `import hy` 才能导入 `.hy` 模块。在包的 `__init__.py` �
 `hy.compile` 不存在，用 `hy.compiler.hy_compile`。`hy2py` 会执行编译期代码，只用来核展开，不作构建步骤。
 
 ## Hy 语法要点
+- 真值写 `True` 与 `False`。`t` 与 `nil` 不是 Hy 真值。
+- 标识符参与 mangle，`top-k` 编译为 `top_k`。字符串不参与 mangle。字典键与 `getattr` 参数写外部 Python 名。
+- 动态键写 `(dict out #** {name value})`。
+- 构造表达式后先绑定实例，再调用方法。
 
 - 属性访问写 `obj.attr` 或 `(. obj attr)`。`(.attr obj)` 是方法调用。
 - 取默认值写 `(.get mapping key default)`。`(get mapping key default)` 不是取默认值。
@@ -103,7 +108,7 @@ Python 侧先 `import hy` 才能导入 `.hy` 模块。在包的 `__init__.py` �
 - `#(...)` 是元组字面量，不是调用。`(tuple a b)` 不接受两个实参，元组写 `#(a b)`。
 - 不等写 `(!= a b)`。`not=` 不是 Hy 的运算符。
 - 赋值目标可用 `#(a b)` 或 `[a b]`；两种写法都按位置解构。
-- 推导式头部的 `[...]` 是子句列表。取值子句写 `value iterable`，`value` 可为 `[a b]`；解构二元组写作 `[[a b] items]`。
+- 推导式头部的 `[...]` 是子句列表。取值子句写 `value iterable`。`value` 可写 `[a b]` 或 `#(a b)`，如 `(lfor #(a b) items ...)`。
 - 方法装饰器写在 `defn` 之后、返回标注之前：`(defn [staticmethod] #^ str f [] ...)`。返回标注写在名字之前：`(defn #^ None method [self] ...)`。
 - 泛型标注写 `(get typing.ClassVar str)`。
 - 方法调用的实参位置可用 `#*`：`(.format "{}" #* [1])`。

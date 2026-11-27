@@ -7,12 +7,15 @@ description: 写或测 Hy 代码时：用现成宏与读器，按 Python 语义�
 
 先看下文接口清单。清单里有名字，就用那个名字。清单里没有，才写 helper。
 
-- 造 dict 写 `dfor`，造 list 写 `lfor`，造 set 写 `sfor`，造迭代器写 `gfor`。`lfor`、`sfor`、`gfor` 的值可写 `#* ITERABLE`；`dfor` 的最后一项可写 `#** MAPPING`。
+- 简单集合映射写 `map`、`filter`、`dict`、`set` 与 `sorted`。列运算写 pandas 与 numpy 表达式。
+- 需要生成器时写 `gfor`。`lfor`、`sfor`、`dfor` 只用于普通函数表达不了的形状。
+- `lfor`、`sfor`、`gfor` 的值可写 `#* ITERABLE`；`dfor` 的最后一项可写 `#** MAPPING`。
 - 条件写 `cond`（分支成对，默认支写 `True`）、`when`、`match`；`case` 与 `branch` 的默认支写 `else`；比较链写 `chainc`。
 - 提前跳出写 `block` 加 `block-ret`，跨块跳出写 `block-ret-from`。
 - 尾递归写 `loop` 加 `recur`，绑定表每项写 `[名字 初值]`，如 `[[x 0] [acc 1]]`。自递归函数不手写。
+- 控制状态确实需要累积时才写 `loop`。一层映射不写 `loop`。
 - 局部解构写 `let+ setv+ defn+ fn+`，绑定项是「模式 值」对。核心 `setv` 和 `let` 只按位置解构，按键名取值要用 Hyrule 的模式。
-- 多维索引写 `ncut`，如 `(ncut df.loc : ["B"])`。逐层取 dict 写 `(.get (.get m k1) k2)`。
+- 多维索引写 `ncut`，如 `(ncut df.loc : ["B"])`。同一对象连续取键或调用方法时写 `->`。
 - 原地改集合写 `assoc`；返回链式结果写 `doto`。
 - 跨模块调函数写 `hy.I`，调宏写 `hy.R`；模块路径中的点写斜杠，如 `hy.I.os/path.basename`。
 - `defreader` 收掉重复外壳之前，先确认 `defmacro` 做不到。
@@ -121,7 +124,8 @@ Python 侧先 `import hy` 才能导入 `.hy` 模块。在包的 `__init__.py` �
 
 判据：读到某一行时，不必先把读写样板翻译回业务概念。业务顺序就是代码顺序，算式在字面上就是算式。
 
-线性数据变换用 `->` 竖排，一步一行。集合运算、树形求和、条件内嵌改用嵌套形式；`->` 把一行摊成三层的地方不要用。
+短链写在一行。长链用 `->` 竖排，一步一行。方法形式可省空括号，写 `.dropna`。
+集合运算、树形求和、条件内嵌改用嵌套形式；`->` 把一行摊成三层的地方不要用。
 
 重复的垂直样板收进 `defmacro`：逐列同一变换、每组同一折叠、字段与渲染串本属一处。宏的参数写业务名，body 写算式，展开式里不留样板。
 
@@ -132,6 +136,7 @@ Python 侧先 `import hy` 才能导入 `.hy` 模块。在包的 `__init__.py` �
 一个宏只收一种形态。宏名读出来就是动作，不要靠注释解释。
 
 改完用 `hy2py` 看展开：展开式应比原式短，且不含多余局部名。
+按 form 名定位编辑。批量替换后重新定位 form，旧序号会失效。
 
 ## 改 .hy 后的缓存
 
@@ -165,6 +170,8 @@ def pytest_collect_file(file_path, parent):
 `.hy` 测试文件同时写 `(import mod)` 与 `(require mod :readers *)`：前者取模块内对象，后者取读器。
 
 断言异常类型前先确认抛在哪一层。读器内抛出的违例是 `LexException`（`SyntaxError` 的子类），不是 `ValueError`；被调用函数抛出的按函数自己的类。
+增量验证先跑 REPL，再跑改动模块的定向测试。全量测试留到阶段收口。
+高阶函数跳过的分支要直接测助手函数。
 
 ## 覆盖率
 
@@ -176,7 +183,7 @@ coverage.py 采集 `.hy` 的行到数据文件，但报告阶段用 Python 解�
 
 ## Python 到 Hy 的初稿
 
-py2hy 按 Python AST 生成 Hy 初稿。初稿保留 `for`、`while`、`return` 与连续 `setv`，并丢弃注释和风格信息。把初稿当语法词典和手改起点，按本文准则改成 `let`、`cond`、`loop/recur` 与推导式。翻译器未实现节点时直接手写对应 Hy 形式。已有 Hy 代码直接按本文重构。用装齐 `hy`、`hyrule`、`packaging` 的解释器运行翻译器。
+py2hy 按 Python AST 生成 Hy 初稿。初稿保留 `for`、`while`、`return` 与连续 `setv`，并丢弃注释和风格信息。把初稿当语法词典和手改起点，按本文准则改成 `let`、`cond`、向量化表达式与必要的 `loop/recur`。翻译器未实现节点时直接手写对应 Hy 形式。已有 Hy 代码直接按本文重构。用装齐 `hy`、`hyrule`、`packaging` 的解释器运行翻译器。
 
 ## 探查不熟语法与项目行为
 

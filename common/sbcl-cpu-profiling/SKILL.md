@@ -1,6 +1,6 @@
 ---
 name: sbcl-cpu-profiling
-description: 给 Lisp 镜像做 CPU 归因时：统计采样定位自身耗时最高的函数。
+description: SBCL CPU 占用高时：sb-sprof 采样归因回路。
 ---
 
 # 采样归因回路

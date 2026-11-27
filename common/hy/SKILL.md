@@ -1,6 +1,6 @@
 ---
 name: hy
-description: 写或测 Hy 代码时：用现成宏与读器，按 Python 语义落笔。
+description: 写或转写 Hy 代码时：用现成写法。
 ---
 
 ## 先查现成写法
@@ -183,7 +183,7 @@ coverage.py 采集 `.hy` 的行到数据文件，但报告阶段用 Python 解�
 
 ## Python 到 Hy 的初稿
 
-py2hy 按 Python AST 生成 Hy 初稿。初稿保留 `for`、`while`、`return` 与连续 `setv`，并丢弃注释和风格信息。把初稿当语法词典和手改起点，按本文准则改成 `let`、`cond`、向量化表达式与必要的 `loop/recur`。翻译器未实现节点时直接手写对应 Hy 形式。已有 Hy 代码直接按本文重构。用装齐 `hy`、`hyrule`、`packaging` 的解释器运行翻译器。
+py2hy 是 pip 模块。在项目目录执行 `uv run --with py2hy python -m py2hy SOURCE.py`，把 stdout 当作 Hy 初稿。初稿保留 `for`、`while`、`return` 与连续 `setv`，并丢弃注释和风格信息。把初稿当语法词典和手改起点，按本文准则改成 `let`、`cond`、向量化表达式与必要的 `loop/recur`。翻译器未实现节点时直接手写对应 Hy 形式。已有 Hy 代码直接按本文重构。
 
 ## 探查不熟语法与项目行为
 

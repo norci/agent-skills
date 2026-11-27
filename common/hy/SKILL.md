@@ -182,7 +182,7 @@ py2hy 按 Python AST 生成 Hy 初稿。初稿保留 `for`、`while`、`return` 
 
 优先用 hy 自带入口当场求值，不写临时探针文件。短表达式用 `hy -c CMD`；多行表达式用 `hy -` 从标准输入读，二者都自带项目解释器与依赖。一次只问一个判据，只打印结论与关键值。
 
-有 hy repl MCP 时也可用它的 eval。worker 必须能导入项目依赖；若 `import pandas` 报 `ModuleNotFoundError`，先重启 MCP 服务，不改去仓库写临时脚本。
+有 hy-repl MCP 时先启动项目 worker，再调用 eval；未启动时 eval 会拒绝。启动参数传项目根，worker 的工作目录就是项目根。eval 的表达式写 Hy 形式，可一次放多个 form；变量跨 eval 保留。stdout 与 stderr 分开返回，把判据和关键值打印到 stdout。worker 必须能导入项目依赖；若 `import pandas` 报 `ModuleNotFoundError`，先重启 MCP 服务。
 
 同一形状第二次失败时，回本文找该形状，不猜第二个写法。
 

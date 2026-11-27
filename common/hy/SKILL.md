@@ -174,6 +174,10 @@ coverage.py 采集 `.hy` 的行到数据文件，但报告阶段用 Python 解�
 
 `tests/*` 已在 coverage omit 中的项目，测试夹具改 `.hy` 不增加新盲区。
 
+## Python 到 Hy 的初稿
+
+py2hy 按 Python AST 生成 Hy 初稿。初稿保留 `for`、`while`、`return` 与连续 `setv`，并丢弃注释和风格信息。把初稿当语法词典和手改起点，按本文准则改成 `let`、`cond`、`loop/recur` 与推导式。翻译器未实现节点时直接手写对应 Hy 形式。已有 Hy 代码直接按本文重构。用装齐 `hy`、`hyrule`、`packaging` 的解释器运行翻译器。
+
 ## 探查不熟语法与项目行为
 
 优先用 hy 自带入口当场求值，不写临时探针文件。短表达式用 `hy -c CMD`；多行表达式用 `hy -` 从标准输入读，二者都自带项目解释器与依赖。一次只问一个判据，只打印结论与关键值。
